@@ -1,7 +1,5 @@
-import styled from 'styled-components';
-// import Graph from './Graph';
 import { FaWhatsapp, FaWikipediaW } from 'react-icons/fa';
-import { Row, Col, Button, Card, Table, Form } from 'react-bootstrap';
+import { Row, Col, Button, Card } from 'react-bootstrap';
 import { ChevronLeft, ChevronRight, FileBarGraph } from 'react-bootstrap-icons';
 import MetricsButton from '../common/MetricsButton';
 import { graphMetrics } from '../../pages/Home';
@@ -11,7 +9,6 @@ import MetricsPanel from '../network/MetricsPanel';
 import NetworkCustomizationToolbar from '../NetworkCustomizationToolbar';
 import NetworkGraph from '../network/NetworkGraph';
 import NetworkDataTable from '../NetworkDataTable';
-import { GraphContainer } from './StyledComponents-El';
 
 
 
@@ -71,7 +68,7 @@ const ResearchHistory = ({ research }) => {
     });
     const forceGraphRef = useRef(null);
 
-    
+
     const formatDate = (dateString) => {
         return new Date(dateString).toLocaleDateString('en-GB', {
             day: '2-digit',
@@ -782,49 +779,43 @@ const ResearchHistory = ({ research }) => {
 
     return (
         <>
-            <h1>{research.research_name}</h1>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '2rem' }}>
-                {research.platform === 'whatsapp' ? (
-                    <FaWhatsapp size={32} color="#25D366" />
-                ) : (
-                    <FaWikipediaW size={32} color="#636466" />
-                )}
-                <div>
-                    <p style={{ margin: 0 }}>Platform: {research.platform.charAt(0).toUpperCase() + research.platform.slice(1)}</p>
-                    <p style={{ margin: 0 }}>Created: {formatDate(research.created_at)}</p>
+            <div className="d-flex justify-content-between align-items-center mb-4">
+                <h3 className="fw-bold">{research.research_name}</h3>
+                <div className="d-flex align-items-center gap-1">
+                    {research.platform === 'whatsapp' ? (
+                        <FaWhatsapp size={20} color="#25D366" />
+                    ) : (
+                        <FaWikipediaW size={20} color="#636466" />
+                    )}
+                    {/* <div>
+                        <p className="m-0">Platform: {research.platform.charAt(0).toUpperCase() + research.platform.slice(1)}</p>
+                    </div> */}
                 </div>
             </div>
 
-            <div style={{ marginBottom: '2rem' }}>
-                <h3>Description</h3>
+            <div className="mb-4">
+                <h5 className="fw-bold">Description</h5>
                 <p>{research.description || 'No description provided'}</p>
             </div>
 
             <div>
-                <h3>Applied Filters</h3>
-                <div style={{
-                    display: 'grid',
-                    gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))',
-                    gap: '1rem',
-                    marginTop: '1rem'
-                }}>
+                <h5 className="fw-bold">Applied Filters</h5>
+                <div className="row g-3 mt-3">
                     {filters.map(filter => (
                         filter.value && (
-                            <div key={filter.label} style={{
-                                padding: '1rem',
-                                background: '#f8f9fa',
-                                borderRadius: '4px'
-                            }}>
-                                <strong>{filter.label}:</strong> {filter.value}
+                            <div key={filter.label} className="col-12 col-md-6 col-lg-4">
+                                <div className="p-3 bg-light rounded">
+                                    <strong>{filter.label}:</strong> {filter.value}
+                                </div>
                             </div>
                         )
                     ))}
                 </div>
             </div>
 
-            <div style={{ margin: '3rem 0' }}>
-                <h3>Primary Analysis</h3>
-                <GraphContainer>
+            <div className="my-5">
+                <h5 className='fw-bold'>Primary Analysis</h5>
+                <div className='graph-container'>
                     <Row className="mt-4">
                         <Col
                             lg={3}
@@ -833,7 +824,7 @@ const ResearchHistory = ({ research }) => {
                                 }`}
                         >
                             <Card className="metrics-card">
-                                <h4 className="fw-bold d-flex justify-content-between align-items-center">
+                                <h5 className="fw-bold d-flex justify-content-between align-items-center">
                                     {showMetrics && "Graph Metrics"}
                                     <Button
                                         variant="link"
@@ -846,7 +837,7 @@ const ResearchHistory = ({ research }) => {
                                             <ChevronRight size={20} />
                                         )}
                                     </Button>
-                                </h4>
+                                </h5>
                                 {showMetrics && (
                                     <div className="mt-2">
                                         <MetricsButton
@@ -938,7 +929,7 @@ const ResearchHistory = ({ research }) => {
                             <Card className="graph-card">
                                 <div className="graph-placeholder">
                                     {networkData && (
-                                        <GraphContainer>
+                                        <div className="graph-container">
                                             <NetworkGraph
                                                 networkData={networkData}
                                                 filteredNodes={filteredNodes}
@@ -952,7 +943,7 @@ const ResearchHistory = ({ research }) => {
                                                 networkWasRestored={networkWasRestored}
                                                 forceGraphRef={forceGraphRef}
                                             />
-                                        </GraphContainer>
+                                        </div>
                                     )}
                                 </div>
                             </Card>
@@ -964,7 +955,7 @@ const ResearchHistory = ({ research }) => {
                             )}
                         </Col>
                     </Row>
-                </GraphContainer>
+                </div>
             </div>
         </>
     );

@@ -1,5 +1,4 @@
-import styled from 'styled-components';
-import { useState, useEffect} from 'react';
+import { useState, useEffect } from 'react';
 import { useSelector } from 'react-redux';
 import { toast } from 'react-hot-toast';
 import Loader from '../components/utils/Loader';
@@ -8,9 +7,11 @@ import Modal from '../components/utils/Modal';
 import ResearchHistory from '../components/utils/ResearcHistory';
 import UpdateResearch from '../components/utils/UpdateResearch';
 import ComparisonHistory from '../components/utils/HistoryComparison';
-import { Button, ButtonContainer, ContainerLoader, HistoryContainer, StatusBadge, Table } from '../components/utils/StyledComponents-El';
+import { Badge, Button, ButtonGroup, Card, Table } from 'react-bootstrap';
+import { Tooltip } from 'react-tooltip'
 
 
+import "../components/utils/history.css";
 
 const History = () => {
     const user = useSelector(state => state.user);
@@ -43,7 +44,7 @@ const History = () => {
     };
 
     const updateResearchs = (researchData) => {
-        setUserHistory(userHistory.map(research => research.id === researchData.id ? {...research, ...researchData} : research));
+        setUserHistory(userHistory.map(research => research.id === researchData.id ? { ...research, ...researchData } : research));
     };
 
     useEffect(() => {
@@ -73,63 +74,73 @@ const History = () => {
     }, []);
 
     return (
-        <HistoryContainer>
-            {research && (
-                <Modal onClose={() => setResearch(null)}>
-                    {research.button === 'view' && <ResearchHistory research={research} />}
-                    {research.button === 'edit' && <UpdateResearch research={research} setResearch={setResearch} updateResearchs={updateResearchs}/>}
-                    {research.button === 'compare' && <ComparisonHistory research={research} />}
-                </Modal>
-            )}
-            <h2>{user?.currentUser?.name || 'User'} History</h2>
-            {loading ? (
-                <ContainerLoader>
-                    <Loader />
-                </ContainerLoader>
-            ) : (
-                <Table>
-                    <thead>
-                        <tr>
-                            <th>Research Name</th>
-                            <th>Date Created</th>
-                            <th>Platform</th>
-                            <th>Status</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {userHistory.map((research) => (
-                            <tr key={research.id}>
-                                <td>{research.research_name}</td>
-                                <td>{new Date(research.created_at).toLocaleDateString()}</td>
-                                <td>{research.platform}</td>
-                                <td>
-                                    <StatusBadge status={research.status}>
-                                        {research.status || 'N/A'}
-                                    </StatusBadge>
-                                </td>
-                                <td>
-                                    <ButtonContainer>
-                                        <Button variant="primary" aria-label="View details" onClick={() => setResearch({...research, button: 'view'})}>
-                                            <FaEye />
-                                        </Button>
-                                        <Button variant="success" onClick={() => setResearch({...research, button: 'edit'})} aria-label="Edit">
-                                            <FaEdit />
-                                        </Button>
-                                        <Button variant="warning" onClick={() => setResearch({...research, button: 'compare'})} aria-label="Compare">
-                                            <FaCopy />
-                                        </Button>
-                                        <Button variant="danger" onClick={() => handleDelete(research.id)} aria-label="Delete" disabled={inAction}>
-                                            <FaTrash />
-                                        </Button>
-                                    </ButtonContainer>
-                                </td>
-                            </tr>
-                        ))}
-                    </tbody>
-                </Table>
-            )}
-        </HistoryContainer>
+        <div className='history-container'>
+            <Tooltip id="my-tooltip" />
+                    {research && (
+                        <Modal onClose={() => setResearch(null)}>
+                            {research.button === 'view' && <ResearchHistory research={research} />}
+                            {research.button === 'edit' && <UpdateResearch research={research} setResearch={setResearch} updateResearchs={updateResearchs} />}
+                            {research.button === 'compare' && <ComparisonHistory research={research} />}
+                        </Modal>
+                    )}
+            <Card className="history-table mt-4">
+                <Card.Header className="d-flex justify-content-between align-items-center">
+                    <h4 className="m-0 fw-bold">History Area</h4>
+                    {userHistory.length ? <p className="m-0 fw-bold">Date Rang: {`${new Date(userHistory?.at(0)?.created_at).toLocaleDateString()} - ${new Date(userHistory?.at(-1)?.created_at).toLocaleDateString()}`}</p> : ""}
+                </Card.Header>
+                <Card.Body>
+                    {loading ? (
+                        <div className="loader-container">
+                            <Loader />
+                        </div>
+                    ) : (
+                        <Table striped bordered hover>
+                            <thead>
+                                <tr>
+                                    <th>Research Name</th>
+                                    <th>Date Created</th>
+                                    <th>Platform</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {userHistory.map((research) => (
+                                    <tr key={research.id}>
+                                        <td>{research.research_name}</td>
+                                        <td>{new Date(research.created_at).toLocaleDateString()}</td>
+                                        <td>{research.platform}</td>
+                                        <td>
+                                            <Badge bg="info" className="community-badge">
+                                                {research.status || 'N/A'}
+                                            </Badge>
+                                           
+                                        </td>
+                                        <td>
+                                            <ButtonGroup size='sm'>
+                                                <Button data-tooltip-id="my-tooltip"  data-tooltip-content="<your placeholder>" aria-label="View details" onClick={() => setResearch({ ...research, button: 'view' })}>
+                                                    <FaEye />
+                                                </Button>
+                                                <Button  onClick={() => setResearch({ ...research, button: 'edit' })} aria-label="Edit">
+                                                    <FaEdit />
+                                                </Button>
+                                                <Button  onClick={() => setResearch({ ...research, button: 'compare' })} aria-label="Compare">
+                                                    <FaCopy />
+                                                </Button>
+                                                <Button  onClick={() => handleDelete(research.id)} aria-label="Delete" disabled={inAction}>
+                                                    <FaTrash />
+                                                </Button>
+                                            </ButtonGroup>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </Table>
+                        /* </table> */
+                    )}
+                </Card.Body>
+            </Card>
+        </div>
     );
 };
 

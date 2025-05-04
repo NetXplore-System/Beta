@@ -2,7 +2,6 @@ import { ForceGraph2D } from "react-force-graph";
 import { Card, Button } from "react-bootstrap";
 import { GraphContainer } from "../../pages/Form.style.js";
 import React, { useState, useRef } from "react";
-import { GraphButton } from "../utils/StyledComponents-El.js";
 
 
 const ComparisonGraph = ({

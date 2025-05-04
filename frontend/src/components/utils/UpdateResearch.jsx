@@ -1,23 +1,10 @@
-import React, { useState } from 'react';
+import { useRef, useState } from 'react';
 import toast from 'react-hot-toast';
 import { useSelector } from 'react-redux';
-import styled from 'styled-components';
-import { Column, FormContainer, Row, StyledInput, StyledTextarea } from './StyledComponents-El';
+import { Button, Card, Form } from 'react-bootstrap';
+import { AiOutlineLoading } from 'react-icons/ai';
 
 
-const Button = styled.button`
-  margin: 10px 5px;
-  padding: 10px 20px;
-  border: none;
-  border-radius: 5px;
-  cursor: pointer;
-  background-color: ${(props) => (props.primary ? '#4CAF50' : '#f44336')};
-  color: white;
-  &:disabled {
-    background-color: #ccc;
-    cursor: not-allowed;
-  }
-`;
 
 export default function UpdateResearch({ research, setResearch, updateResearchs }) {
   const user = useSelector((state) => state.user);
@@ -45,6 +32,7 @@ export default function UpdateResearch({ research, setResearch, updateResearchs 
   });
   const [loading, setLoading] = useState(false);
   const [file, setFile] = useState(null);
+  const fileRef = useRef(null);
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -87,7 +75,7 @@ export default function UpdateResearch({ research, setResearch, updateResearchs 
       });
       if (!res.ok) {
         toast.error('Error uploading file');
-        console.error('Error uploading file:', res);  
+        console.error('Error uploading file:', res);
         return;
       }
       const response = await fetch(`${import.meta.env.VITE_API_URL}/research/${research.id}`, {
@@ -96,7 +84,7 @@ export default function UpdateResearch({ research, setResearch, updateResearchs 
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${user.token}`,
         },
-        body: JSON.stringify({...researchData, file_name: file.name}),
+        body: JSON.stringify({ ...researchData, file_name: file.name }),
       });
       if (response.ok) {
         setResearch(researchData);
@@ -116,55 +104,89 @@ export default function UpdateResearch({ research, setResearch, updateResearchs 
     }
   };
 
+  const handleFileChange = (e) => {
+    const selectedFile = e.target.files[0];
+    if (selectedFile) {
+      setFile(selectedFile);
+    }
+  };
+
+  const handleFileClick = (e) => {
+    e.stopPropagation();
+    e.preventDefault();
+    fileRef.current.click();
+  }
+
   return (
-    <FormContainer>
-      <h2>Update Research</h2>
-      <form>
-        <Row>
-          <Column fullWidth>
-            <label>Research Name:</label>
-            <StyledInput
-              type="text"
-              name="research_name"
-              value={researchData.research_name}
-              onChange={handleChange}
-            />
-          </Column>
-          <Column fullWidth>
-            <label>Description:</label>
-            <StyledTextarea
-              name="description"
-              value={researchData.description}
-              onChange={handleChange}
-            />
-          </Column>
-        </Row>
-        <Row>
-          {Object.keys(researchData.filters).map((key) => (
-            <Column key={key}>
-              <label>{key.replace(/_/g, ' ')}:</label>
-              <StyledInput
-                type={key === 'anonymize' ? 'checkbox' : 'text'}
-                style={key === 'anonymize' ? { display: 'flex', justifyContent: 'flex-start', marginTop: '10px' } : {}}
-                name={key}
-                value={researchData.filters[key]}
-                checked={key === 'anonymize' ? researchData.filters[key] : undefined}
+    <Card className='update-history'>
+      <Card.Header>
+        <h5 className='fw-bold'>Update Research</h5>
+      </Card.Header>
+      <Card.Body>
+          <div className='row'>
+            <Form.Group className='column full-width'>
+              <Form.Label className="research-label">Research Name:</Form.Label>
+              <Form.Control
+                type="text"
+                name="research_name"
+                value={researchData.research_name}
                 onChange={handleChange}
               />
-            </Column>
-          ))}
-          <Column fullWidth>
-            <label>File:</label>
-            <input type="file" onChange={(e) => setFile(e.target.files[0])} />
-          </Column>
-        </Row>
-        <Button type="button" onClick={handleCancel}>
-          Cancel
-        </Button>
-        <Button type="button" primary onClick={handleSave} disabled={loading}>
-          {loading ? 'Saving...' : 'Save'}
-        </Button>
-      </form>
-    </FormContainer>
+            </Form.Group>
+            <Form.Group className='column full-width'>
+              <Form.Label className="research-label">Description:</Form.Label>
+              <textarea
+                className='form-control'
+                name="description"
+                style={{ width: '100%' }}
+                rows={3}
+                value={researchData.description}
+                onChange={handleChange}
+              />
+            </Form.Group>
+          </div>
+          <div className='row'>
+            {Object.keys(researchData.filters).map((key) => (
+              key === 'anonymize' ?
+                null
+                :
+                <Form.Group className='column' key={key}>
+                  <Form.Label className="research-label">{key.replace(/_/g, ' ')}:</Form.Label>
+                  <Form.Control
+                    type={(key.split("_")?.[1] === 'date' || key.split("_")?.[1] === 'time') ?
+                      key.split("_")[1] === 'date' ? 'date' : 'time'
+                      :
+                      'text'}
+                    name={key}
+                    value={researchData.filters[key]}
+                    onChange={handleChange}
+                  />
+                </Form.Group>
+            ))}
+            <Form.Check
+              type={'checkbox'}
+              label={'anonymize'}
+              checked={researchData.filters['anonymize']}
+              name={'anonymize'}
+              onChange={handleChange}
+              className='column input-checkbox'
+            />
+            <div className='column full-width' >
+              <button className='generic-button' onClick={handleFileClick}>Upload File</button>
+              <span className='file-name'>{file ? file.name : 'No file selected'}</span>
+              <p className='file-description'>Please upload the file you used for the research</p>
+              <input className='d-none' ref={fileRef} type="file" onChange={handleFileChange} />
+            </div>
+          </div>
+          <div className="d-flex justify-content-end mt-3 gap-2">
+            <Button variant='outline-danger' onClick={handleCancel} >
+              Cancel
+            </Button>
+            <Button className='generic-button' onClick={handleSave} disabled={loading} >
+              {loading ? <><AiOutlineLoading className="spinner-icon" /> Saving...</> : 'Save'}
+            </Button>
+          </div>
+      </Card.Body>
+    </Card>
   );
 }

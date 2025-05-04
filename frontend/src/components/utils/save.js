@@ -33,12 +33,14 @@ export const saveToDB = async (
     const data = await response.json();
 
     if (response.ok) {
-      toast.success(data?.detail || "Research saved successfully!");
+      return (data?.detail || "Research saved successfully!");
     } else {
-      toast.error(data?.detail || "An error occurred while saving the research.");
+      // toast.error(data?.detail || "An error occurred while saving the research.");
+      throw new Error(data?.detail || "An error occurred while saving the research.");
     }
   } catch (error) {
-    toast.error("An error occurred while saving the research.");
+    // toast.error("An error occurred while saving the research.");
     console.error("Save error:", error);
+    throw new Error("An error occurred while saving the research.");
   }
 };

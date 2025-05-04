@@ -213,7 +213,7 @@ const FilterForm = ({
               </div>
               <div className="summary-item">
                 <div className="summary-label">Selected Users:</div>
-                <div className="summary-value">{selectedUsers && selectedUsers.length > 0 ? selectedUsers.join(', ') : 'None'}</div>
+                <div className="summary-value">{selectedUsers ? selectedUsers : 'None'}</div>
               </div>
             </div>
           </div>

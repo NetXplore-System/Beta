@@ -3,8 +3,7 @@ import { Card, Row, Col, Table, Form } from "react-bootstrap";
 import ComparisonGraph from "./ComparisonGraph";
 import { useDispatch } from "react-redux";
 import { clearTableData, setTableData } from "../../redux/table/tableSlice";
-import { GraphButton } from "../utils/StyledComponents-El";
-import { addToEnd } from "../../redux/images/imagesSlice";
+import { addToComparison } from "../../redux/images/imagesSlice";
 
 const ComparisonMetrics = ({
   originalNetworkData,
@@ -124,16 +123,15 @@ const ComparisonMetrics = ({
     e.stopPropagation();
     const canvas = document.querySelectorAll("canvas");
     source ?
-      dispatch(addToEnd({
+      dispatch(addToComparison({
         data: canvas[1].toDataURL('image/png'),
-        type: "comparison",
-        source
+        type: "source",
+        width: index > 1 ? "big" : "small",
       }))
       :
-      dispatch(addToEnd({
+      dispatch(addToComparison({
         data: canvas[i + 2].toDataURL('image/png'),
         type: "comparison",
-        source,
         index
       }))
 
@@ -254,7 +252,7 @@ const ComparisonMetrics = ({
                       height={500}
                       comparisonMetrics={comparisonMetrics}
                       buttonElement={
-                        <GraphButton onClick={(e) => handleScreenshot(e, true)}>Take Screenshot</GraphButton>
+                        <button className="graph-button" onClick={(e) => handleScreenshot(e, true, activeComparisonIndices.length)}>Take Screenshot</button>
                       }
                     />
                   </Col>
@@ -278,7 +276,7 @@ const ComparisonMetrics = ({
                         isComparisonGraph={true}
                         comparisonMetrics={comparisonMetrics}
                         buttonElement={
-                          <GraphButton onClick={(e) => handleScreenshot(e, false, index, i)}>Take Screenshot</GraphButton>
+                          <button className="graph-button" onClick={(e) => handleScreenshot(e, false, index, i)}>Take Screenshot</button>
                         }
                       />
                     </Col>

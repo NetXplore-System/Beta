@@ -33,8 +33,8 @@ import {
   compareNetworks,
 } from "../components/utils/ApiService.jsx";
 import { useDispatch, useSelector } from "react-redux";
-import { GraphButton } from "../components/utils/StyledComponents-El.js";
-import { addToEnd, clearImages } from "../redux/images/imagesSlice.js";
+// import { GraphButton } from "../components/utils/StyledComponents-El.js";
+import { addToMain, clearImages } from "../redux/images/imagesSlice.js";
 
 
 
@@ -287,18 +287,35 @@ const Home = () => {
 
   const handleSubmit = (selectedFile) => {
     if (!selectedFile) {
-      setMessage("Please select a file before uploading.");
+      // setMessage("Please select a file before uploading.");
+      toast.error("Please select a file before uploading.");
       return;
     }
 
-    uploadFile(selectedFile)
-      .then((data) => {
-        if (data.message) {
-          setMessage(data.message);
-          setUploadedFile(data.filename);
-        }
-      })
-      .catch((error) => setMessage(error.message));
+    toast.promise(
+      uploadFile(selectedFile),
+      {
+        loading: "Uploading...",
+        success: (data) => {
+          if (data.message) {
+            setUploadedFile(data.filename);
+          }
+          return data.message || "File uploaded successfully!";
+        },
+        error: (error) => {
+          return error?.message || "Error uploading file.";
+        },
+      }
+    );
+
+    // uploadFile(selectedFile)
+    //   .then((data) => {
+    //     if (data.message) {
+    //       setMessage(data.message);
+    //       setUploadedFile(data.filename);
+    //     }
+    //   })
+    //   .catch((error) => setMessage(error.message));
   };
 
   const handleDelete = async () => {
@@ -338,21 +355,44 @@ const Home = () => {
     setNetworkWasRestored(false);
 
     const params = filters.buildNetworkFilterParams();
-    analyzeNetwork(uploadedFile, params)
-      .then((data) => {
-        console.log("Data returned from server:", data);
-        if (data.nodes && data.links) {
-          dispatch(clearImages());
-          setNetworkData(data);
-          setOriginalNetworkData(data);
-          setShouldFetchCommunities(true);
-        } else {
-          setMessage("No data returned from server.");
-        }
-      })
-      .catch((error) => {
-        setMessage(error.message);
-      });
+
+    toast.promise(
+      analyzeNetwork(uploadedFile, params),
+      {
+        loading: "Analyzing network...",
+        success: (data) => {
+          if (data.nodes && data.links) {
+            dispatch(clearImages());
+            setNetworkData(data);
+            setOriginalNetworkData(data);
+            setShouldFetchCommunities(true);
+            return "Analysis completed successfully!";
+          } else {
+            // setMessage("No data returned from server.");
+            return "No data returned from server.";
+          }
+        },
+        error: (error) => {
+          // setMessage(error.message);
+          return error?.message || "Error analyzing network.";
+        },
+      }
+    )
+    // analyzeNetwork(uploadedFile, params)
+    //   .then((data) => {
+    //     console.log("Data returned from server:", data);
+    //     if (data.nodes && data.links) {
+    //       dispatch(clearImages());
+    //       setNetworkData(data);
+    //       setOriginalNetworkData(data);
+    //       setShouldFetchCommunities(true);
+    //     } else {
+    //       setMessage("No data returned from server.");
+    //     }
+    //   })
+    //   .catch((error) => {
+    //     setMessage(error.message);
+    //   });
   };
 
   const handleSaveToDB = () => {
@@ -362,10 +402,21 @@ const Home = () => {
       toast.error("Please fill in all required fields.");
       return;
     }
-    saveToDB(id, name, description, uploadedFile, params, selectedMetric, {
-      hasComparison: comparisonNetworkData.length ? true : false,
-      data: comparisonNetworkData || undefined,
-    });
+    toast.promise(
+      saveToDB(id, name, description, uploadedFile, params, selectedMetric, {
+        hasComparison: comparisonNetworkData.length ? true : false,
+        data: comparisonNetworkData || undefined,
+      }),
+      {
+        loading: "Saving...",
+        success: (data) => {
+          return data?.detail || "Research saved successfully!";
+        },
+        error: (error) => {
+          return error?.detail || "Error saving research.";
+        },
+      }
+    )
   };
 
   const calculateNetworkStats = () => {
@@ -1377,9 +1428,8 @@ const Home = () => {
   const handleScreenshot = (e, index) => {
     e.stopPropagation();
     const canvas = document.querySelectorAll('canvas');
-    canvas.length > index && dispatch(addToEnd({
-      data:canvas[index].toDataURL("image/png"),
-      type: "main"
+    canvas.length > index && dispatch(addToMain({
+      data: canvas[index].toDataURL("image/png"),
     }));
   }
 
@@ -1582,7 +1632,7 @@ const Home = () => {
                   <div className="graph-placeholder">
                     {networkData && (
                       <GraphContainer>
-                        <GraphButton onClick={(e) => handleScreenshot(e, 0)}>Take Screenshot</GraphButton>
+                        <button className="graph-button" onClick={(e) => handleScreenshot(e, 0)}>Take Screenshot</button>
                         <NetworkGraph
                           networkData={networkData}
                           filteredNodes={filteredNodes}

@@ -1,11 +1,9 @@
 import React from "react";
 import { Row, Col, Card, Button, Form } from "react-bootstrap";
-import { Upload, Save, Trash } from "react-bootstrap-icons";
-import { AlertBox } from "../../pages/Form.style";
+import {  Save, Trash } from "react-bootstrap-icons";
 import AnonymizationToggle from "../AnonymizationToggle.jsx";
 import FileUploader from "../common/FileUploader.jsx";
-import MyResearchReport from "../utils/ResearchReport.jsx";
-import useFilters from "../../hooks/useFilters.jsx";
+import MyResearchReport from "../utils/MadeReport.jsx";
 
 const ResearchCard = ({
   name,

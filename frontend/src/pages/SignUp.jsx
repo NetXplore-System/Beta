@@ -72,7 +72,7 @@ const SignUp = () => {
 
   return (
     <Container
-      className="d-flex justify-content-center align-items-center"
+      className="d-flex justify-content-center align-items-center pb-5"
       style={{ minHeight: "100vh" }}
     >
       <Card style={{ width: "100%", maxWidth: "500px", borderRadius: "20px" }} className="shadow">
