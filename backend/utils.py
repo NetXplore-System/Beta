@@ -7,7 +7,7 @@ from fastapi.responses import JSONResponse  # type: ignore
 
 
 timestamp_pattern = r"\b\d{1,2}[./-]\d{1,2}[./-]\d{2,4},?\s\d{1,2}:\d{2}(?::\d{2})?\b"
-spam_messages = ["צורף/ה","הצטרף/ה לקבוצה באמצעות קישור ההזמנה","תמונת הקבוצה השתנתה על ידי","תיאור הקבוצה שונה על ידי","GIF הושמט","סטיקר הושמט","כרטיס איש קשר הושמט","השמע הושמט","סרטון הווידאו הושמט","הוחלף למספר חדש. הקש/י כדי לשלוח הודעה או להוסיף מספר חדש.","שם הקבוצה השתנה על ידי","צירפת את", "הצטרף/ה", "צירף/ה",  "התמונה הושמטה", "הודעה זו נמחקה","צורפת על ידי" , "הקבוצה נוצרה על ידי", "ההודעה נמחקה על ידי", "ההודעות והשיחות מוצפנות מקצה לקצה. לאף אחד מחוץ לצ'אט הזה, גם לא ל-WhatsApp, אין אפשרות לקרוא אותן ולהאזין להן.", "הצטרפת לקבוצה דרך קישור הזמנה של הקבוצה"]
+spam_messages = ["This message was deleted","צורף/ה","הצטרף/ה לקבוצה באמצעות קישור ההזמנה","תמונת הקבוצה השתנתה על ידי","תיאור הקבוצה שונה על ידי","GIF הושמט","סטיקר הושמט","כרטיס איש קשר הושמט","השמע הושמט","סרטון הווידאו הושמט","הוחלף למספר חדש. הקש/י כדי לשלוח הודעה או להוסיף מספר חדש.","שם הקבוצה השתנה על ידי","צירפת את", "הצטרף/ה", "צירף/ה",  "התמונה הושמטה", "הודעה זו נמחקה","צורפת על ידי" , "הקבוצה נוצרה על ידי", "ההודעה נמחקה על ידי", "ההודעות והשיחות מוצפנות מקצה לקצה. לאף אחד מחוץ לצ'אט הזה, גם לא ל-WhatsApp, אין אפשרות לקרוא אותן ולהאזין להן.", "הצטרפת לקבוצה דרך קישור הזמנה של הקבוצה"]
 
 
 
@@ -48,7 +48,7 @@ async def extract_messages(
     for line in lines:
         line = re.sub(r"[\u200f\u202f\u202a\u202b\u202c\u202d\u202e\u200d]", "", line).strip()
         match = re.search(timestamp_pattern, line)
-        
+
         if match:
             date_part = match.group()
             parsed = False
@@ -62,12 +62,6 @@ async def extract_messages(
             if not parsed:
                 continue
 
-            if ((start_datetime and dt < start_datetime) or
-                (end_datetime and dt > end_datetime)):
-                current_message = ""
-                current_datetime = None
-                continue
-
             if not ": " in line:
                 continue
             if any(spam in line for spam in spam_messages):
@@ -75,17 +69,21 @@ async def extract_messages(
             if MEDIA_RE.search(line):
                 continue
 
-            if current_message:
-                filtered_lines.append(current_message.strip())
+            if current_message and current_datetime:
+                if (not start_datetime or current_datetime >= start_datetime) and \
+                (not end_datetime or current_datetime <= end_datetime):
+                    filtered_lines.append(current_message.strip())
+
             current_message = line
             current_datetime = dt
-
         else:
             if current_datetime:
                 current_message += " " + line.strip()
 
-    if current_message:
-        filtered_lines.append(current_message.strip())
+    if current_message and current_datetime:
+        if (not start_datetime or current_datetime >= start_datetime) and \
+        (not end_datetime or current_datetime <= end_datetime):
+            filtered_lines.append(current_message.strip())
 
 
     print(f"🔹 Found {len(filtered_lines)} messages in the date range.")
