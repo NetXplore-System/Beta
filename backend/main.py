@@ -26,7 +26,7 @@ from typing import List, Optional
 from models import User, Research, ResearchFilter, NetworkAnalysis, Message, Comparisons
 from utils import extract_messages, anonymize_name, clean_filter_value
 import uuid
-
+from wikipedia import router as wikipedia_router
 
 load_dotenv()
 origins = os.getenv("ALLOWED_ORIGINS", "").split(",") 
@@ -40,6 +40,9 @@ os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 
 app = FastAPI()
+
+# wikipedia
+app.include_router(wikipedia_router)
 
 @app.on_event("startup")
 async def startup():
