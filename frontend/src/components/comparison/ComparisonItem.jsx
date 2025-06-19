@@ -295,10 +295,12 @@ const ComparisonItem = ({
         throw new Error(errorData.detail || "Failed to fetch Wikipedia data");
       }
 
-      const data = await response.json();
+      const {data} = await response.json();
 
-      if (data?.content && data.content.length > 0) {
-        setComparisonWikiContent(data.content);
+      console.log(data)
+
+      if (data && data.length > 0) {
+        setComparisonWikiContent(data);
         setComparisonSelectedSection(null);
 
         const filename = `comparison_wikipedia_data_${index}`;
@@ -310,13 +312,13 @@ const ComparisonItem = ({
           isWikipediaData: true,
           isOriginalFile: false,
           isAnalyzed: false,
-          wikiContent: data.content,
+          wikiContent: data,
           selectedSection: null,
         };
 
         if (useOriginalFile && typeof useOriginalFile === "function") {
           const wikiData = {
-            content: data.content,
+            content: data,
             selectedSection: null,
             isWikipediaData: true,
             isOriginalFile: false,
@@ -348,78 +350,78 @@ const ComparisonItem = ({
     setComparisonSelectedSection(section);
 
     try {
-      const isOriginalFile = comparisonData?.isOriginalFile;
-      let filename;
+      // const isOriginalFile = comparisonData?.isOriginalFile;
+      // let filename;
 
-      if (isOriginalFile) {
-        filename = "wikipedia_data";
-      } else {
-        filename = `comparison_wikipedia_data_${index}`;
+      // if (isOriginalFile) {
+      //   filename = "wikipedia_data";
+      // } else {
+      //   filename = `comparison_wikipedia_data_${index}`;
 
-        const wikiContent =
-          comparisonWikiContent || comparisonData?.wikiContent;
-        if (wikiContent) {
-          const tempResponse = await fetch(
-            `${import.meta.env.VITE_API_URL}/fetch-wikipedia-data`,
-            {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-              },
-              body: JSON.stringify({
-                url: formData.comparisonWikipediaUrl,
-                save_as: filename,
-              }),
-            }
-          );
+      //   const wikiContent =
+      //     comparisonWikiContent || comparisonData?.wikiContent;
+      //   if (wikiContent) {
+      //     const tempResponse = await fetch(
+      //       `${import.meta.env.VITE_API_URL}/fetch-wikipedia-data`,
+      //       {
+      //         method: "POST",
+      //         headers: {
+      //           "Content-Type": "application/json",
+      //         },
+      //         body: JSON.stringify({
+      //           url: formData.comparisonWikipediaUrl,
+      //           save_as: filename,
+      //         }),
+      //       }
+      //     );
 
-          if (!tempResponse.ok) {
-            console.warn(
-              "Could not save comparison data, using fallback method"
-            );
-          }
-        }
-      }
+      //     if (!tempResponse.ok) {
+      //       console.warn(
+      //         "Could not save comparison data, using fallback method"
+      //       );
+      //     }
+      //   }
+      // }
 
-      const response = await fetch(
-        `${import.meta.env.VITE_API_URL}/convert-wikipedia-to-txt`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            filename: filename,
-            section_title: section.title,
-          }),
-        }
-      );
+      // const response = await fetch(
+      //   `${import.meta.env.VITE_API_URL}/convert-wikipedia-to-txt`,
+      //   {
+      //     method: "POST",
+      //     headers: { "Content-Type": "application/json" },
+      //     body: JSON.stringify({
+      //       // filename: filename,
+      //       section_title: section.title,
+      //     }),
+      //   }
+      // );
 
-      const data = await response.json();
-      if (!response.ok) {
-        if (data.detail && data.detail.includes("not found")) {
-          await createComparisonFileFromLocalData(filename, section);
+      // const data = await response.json();
+      // if (!response.ok) {
+      //   if (data.detail && data.detail.includes("not found")) {
+      //     await createComparisonFileFromLocalData(filename, section);
 
-          const retryResponse = await fetch(
-            `${import.meta.env.VITE_API_URL}/convert-wikipedia-to-txt`,
-            {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                filename: filename,
-                section_title: section.title,
-              }),
-            }
-          );
+      //     const retryResponse = await fetch(
+      //       `${import.meta.env.VITE_API_URL}/convert-wikipedia-to-txt`,
+      //       {
+      //         method: "POST",
+      //         headers: { "Content-Type": "application/json" },
+      //         body: JSON.stringify({
+      //           filename: filename,
+      //           section_title: section.title,
+      //         }),
+      //       }
+      //     );
 
-          const retryData = await retryResponse.json();
-          if (!retryResponse.ok) {
-            throw new Error(
-              retryData.detail || "Failed to convert section to TXT"
-            );
-          }
-        } else {
-          throw new Error(data.detail || "Failed to convert section to TXT");
-        }
-      }
+      //     const retryData = await retryResponse.json();
+      //     if (!retryResponse.ok) {
+      //       throw new Error(
+      //         retryData.detail || "Failed to convert section to TXT"
+      //       );
+      //     }
+      //   } else {
+      //     throw new Error(data.detail || "Failed to convert section to TXT");
+      //   }
+      // }
 
       if (comparisonData) {
         comparisonData.selectedSection = section;

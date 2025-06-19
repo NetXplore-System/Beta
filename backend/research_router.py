@@ -15,6 +15,7 @@ from pydantic import BaseModel
 from database import get_db
 from models import Research, Message, ResearchFilter, NetworkAnalysis, Comparisons
 from auth_router import get_current_user
+from wikipedia_router import analyze_wikipedia
 from analyzers.factory import get_analyzer
 from utils import calculate_comparison_stats
 
@@ -67,13 +68,12 @@ async def save_research(
     communities: Optional[str] = Form(None),
 ):
     try:
-        file_path = os.path.join(UPLOAD_FOLDER, file_name)
-        if not os.path.exists(file_path):
-            logger.error(f"File '{file_name}' not found.")
-            raise HTTPException(status_code=404, detail=f"File '{file_name}' not found.")
-        
-        if platform == "wikipedia" and file_name.endswith(".txt"):
-            file_name = file_name[:-4]
+        file_path = None
+        if platform == "whatsapp":
+            file_path = os.path.join(UPLOAD_FOLDER, file_name)
+            if not os.path.exists(file_path):
+                logger.error(f"File '{file_name}' not found.")
+                raise HTTPException(status_code=404, detail=f"File '{file_name}' not found.")
         
         parsed_message_weights = None
         if message_weights:
@@ -84,32 +84,59 @@ async def save_research(
             except Exception as e:
                 logger.warning(f"Invalid message_weights format: {message_weights}, error: {e}")
                 parsed_message_weights = [0.5, 0.3, 0.2] if history_length == 3 else [0.7, 0.3]
-
-        analyzer = get_analyzer(platform)
-        data = await analyzer.analyze(
-            filename=file_name,
-            limit=int(limit) if limit is not None else None,
-            limit_type=limit_type,
-            min_length=int(min_length) if min_length is not None else None,
-            max_length=int(max_length) if max_length is not None else None,
-            keywords=keywords,
-            min_messages=int(min_messages) if min_messages is not None else None,
-            max_messages=int(max_messages) if max_messages is not None else None,
-            active_users=int(active_users) if active_users is not None else None,
-            selected_users=selected_users,
-            username=username,
-            anonymize=False,
-            directed=directed,
-            use_history=use_history,
-            normalize=normalize,
-            start_date=start_date,
-            end_date=end_date,
-            start_time=start_time,
-            end_time=end_time,
-            history_length=int(history_length) if history_length is not None else 3,
-            message_weights=parsed_message_weights,
-            is_for_save=True
-        )
+                
+        data = None
+        if platform == "wikipedia":
+            data = await analyze_wikipedia(
+                section_title=file_name,
+                limit=int(limit) if limit is not None else None,
+                limit_type=limit_type,
+                min_length=int(min_length) if min_length is not None else None,
+                max_length=int(max_length) if max_length is not None else None,
+                keywords=keywords,
+                min_messages=int(min_messages) if min_messages is not None else None,
+                max_messages=int(max_messages) if max_messages is not None else None,
+                active_users=int(active_users) if active_users is not None else None,
+                selected_users=selected_users,
+                username=username,
+                anonymize=False,
+                directed=directed,
+                use_history=use_history,
+                normalize=normalize,
+                start_date=start_date,
+                end_date=end_date,
+                start_time=start_time,
+                end_time=end_time,
+                history_length=int(history_length) if history_length is not None else 3,
+                message_weights=parsed_message_weights,
+                include_messages=include_messages,
+            )
+        else:
+            analyzer = get_analyzer(platform)
+            data = await analyzer.analyze(
+                filename=file_name,
+                limit=int(limit) if limit is not None else None,
+                limit_type=limit_type,
+                min_length=int(min_length) if min_length is not None else None,
+                max_length=int(max_length) if max_length is not None else None,
+                keywords=keywords,
+                min_messages=int(min_messages) if min_messages is not None else None,
+                max_messages=int(max_messages) if max_messages is not None else None,
+                active_users=int(active_users) if active_users is not None else None,
+                selected_users=selected_users,
+                username=username,
+                anonymize=False,
+                directed=directed,
+                use_history=use_history,
+                normalize=normalize,
+                start_date=start_date,
+                end_date=end_date,
+                start_time=start_time,
+                end_time=end_time,
+                history_length=int(history_length) if history_length is not None else 3,
+                message_weights=parsed_message_weights,
+                is_for_save=True
+            )
         
         if isinstance(data, dict):
             pass  
@@ -207,30 +234,59 @@ async def save_research(
                             comp_history_length = int(comp_filter.get("config", {}).get("messageCount", 3))
                             parsed_comp_message_weights = [0.5, 0.3, 0.2] if comp_history_length == 3 else [0.7, 0.3]
 
-                    messages = await analyzer.analyze(
-                        filename=comp_data.get("file_name", file_name),
-                        start_date=comp_filter.get("timeFrame", {}).get("startDate"),
-                        end_date=comp_filter.get("timeFrame", {}).get("endDate"),
-                        start_time=comp_filter.get("timeFrame", {}).get("startTime"),
-                        end_time=comp_filter.get("timeFrame", {}).get("endTime"),
-                        limit=comp_filter.get("limit", {}).get("count"),
-                        limit_type="last" if comp_filter.get("limit", {}).get("fromEnd") else "first",
-                        min_length=comp_filter.get("messageCriteria", {}).get("minLength"),
-                        max_length=comp_filter.get("messageCriteria", {}).get("maxLength"),
-                        keywords=comp_filter.get("messageCriteria", {}).get("keywords"),
-                        min_messages=comp_filter.get("userFilters", {}).get("minMessages"),
-                        max_messages=comp_filter.get("userFilters", {}).get("maxMessages"),
-                        username=comp_filter.get("userFilters", {}).get("usernameFilter"),
-                        selected_users=comp_filter.get("userFilters", {}).get("selectedUsers", ""),
-                        active_users=comp_filter.get("userFilters", {}).get("topActiveUsers", 0),
-                        anonymize=False,
-                        directed=comp_filter.get("config", {}).get("directed", False),
-                        use_history=comp_filter.get("config", {}).get("history", False),
-                        normalize=comp_filter.get("config", {}).get("normalized", False),
-                        history_length=int(comp_filter.get("config", {}).get("messageCount", 3)) if comp_filter.get("config", {}).get("history", False) else None,
-                        message_weights=parsed_comp_message_weights if comp_filter.get("config", {}).get("history", False) else None,
-                        is_for_save=True
-                    )
+                    messages = None
+                    if platform == "wikipedia":
+                        print(comp_data.get("file_name", file_name))
+                        messages = await analyze_wikipedia(
+                            section_title=comp_data.get("file_name", file_name),
+                            start_date=comp_filter.get("timeFrame", {}).get("startDate"),
+                            end_date=comp_filter.get("timeFrame", {}).get("endDate"),
+                            start_time=comp_filter.get("timeFrame", {}).get("startTime"),
+                            end_time=comp_filter.get("timeFrame", {}).get("endTime"),
+                            limit=comp_filter.get("limit", {}).get("count"),
+                            limit_type="last" if comp_filter.get("limit", {}).get("fromEnd") else "first",
+                            min_length=comp_filter.get("messageCriteria", {}).get("minLength"),
+                            max_length=comp_filter.get("messageCriteria", {}).get("maxLength"),
+                            keywords=comp_filter.get("messageCriteria", {}).get("keywords"),
+                            min_messages=comp_filter.get("userFilters", {}).get("minMessages"),
+                            max_messages=comp_filter.get("userFilters", {}).get("maxMessages"),
+                            username=comp_filter.get("userFilters", {}).get("usernameFilter"),
+                            selected_users=comp_filter.get("userFilters", {}).get("selectedUsers", ""),
+                            active_users=comp_filter.get("userFilters", {}).get("topActiveUsers", 0),
+                            anonymize=False,
+                            directed=comp_filter.get("config", {}).get("directed", False),
+                            use_history=comp_filter.get("config", {}).get("history", False),
+                            normalize=comp_filter.get("config", {}).get("normalized", False),
+                            history_length=int(comp_filter.get("config", {}).get("messageCount", 3)) if comp_filter.get("config", {}).get("history", False) else None,
+                            message_weights=parsed_comp_message_weights if comp_filter.get("config", {}).get("history", False) else None,
+                            include_messages=True
+                        )
+                    else:
+                        analyzer = get_analyzer(platform)
+                        messages = await analyzer.analyze(
+                            filename=comp_data.get("file_name", file_name),
+                            start_date=comp_filter.get("timeFrame", {}).get("startDate"),
+                            end_date=comp_filter.get("timeFrame", {}).get("endDate"),
+                            start_time=comp_filter.get("timeFrame", {}).get("startTime"),
+                            end_time=comp_filter.get("timeFrame", {}).get("endTime"),
+                            limit=comp_filter.get("limit", {}).get("count"),
+                            limit_type="last" if comp_filter.get("limit", {}).get("fromEnd") else "first",
+                            min_length=comp_filter.get("messageCriteria", {}).get("minLength"),
+                            max_length=comp_filter.get("messageCriteria", {}).get("maxLength"),
+                            keywords=comp_filter.get("messageCriteria", {}).get("keywords"),
+                            min_messages=comp_filter.get("userFilters", {}).get("minMessages"),
+                            max_messages=comp_filter.get("userFilters", {}).get("maxMessages"),
+                            username=comp_filter.get("userFilters", {}).get("usernameFilter"),
+                            selected_users=comp_filter.get("userFilters", {}).get("selectedUsers", ""),
+                            active_users=comp_filter.get("userFilters", {}).get("topActiveUsers", 0),
+                            anonymize=False,
+                            directed=comp_filter.get("config", {}).get("directed", False),
+                            use_history=comp_filter.get("config", {}).get("history", False),
+                            normalize=comp_filter.get("config", {}).get("normalized", False),
+                            history_length=int(comp_filter.get("config", {}).get("messageCount", 3)) if comp_filter.get("config", {}).get("history", False) else None,
+                            message_weights=parsed_comp_message_weights if comp_filter.get("config", {}).get("history", False) else None,
+                            is_for_save=True
+                        )
 
                     if isinstance(messages, dict):
                         messages = messages.get("messages", [])

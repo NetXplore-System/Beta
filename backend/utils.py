@@ -169,6 +169,54 @@ def calculate_sequential_weights(
     return dict(edge_weights)
 
 
+def calculate_sequential_weights_from_comments(
+    sequence: List[Dict],
+    n_prev: int = 3,
+    message_weights: List[float] = None
+) -> Dict[Tuple[str, str], float]:
+    
+    if n_prev < 1:
+        raise ValueError("n_prev must be at least 1")
+    
+    if message_weights is None:
+        message_weights = [1.0] * n_prev
+    elif len(message_weights) != n_prev:
+        message_weights = message_weights[:n_prev]
+    
+    print(f"Using weights: {message_weights}")
+    print(f"Direct reply weight: 2.0")
+    
+    window: deque = deque(maxlen=n_prev)
+    edge_weights: Dict[Tuple[str, str], float] = defaultdict(float)
+
+    for i, comment in enumerate(sequence):
+        current_sender = comment.get('writer_name')
+        reply_to = comment.get('reply_to')
+        
+        print(f"\nStep {i+1}: {current_sender} (reply_to: {reply_to})")
+        print(f"Window before: {list(window)}")
+        
+        if not current_sender:
+            continue
+            
+        # Sequential weight calculation
+        for idx, previous_sender in enumerate(reversed(window)):
+            if previous_sender == current_sender:  
+                print(f"  Skip same sender: {previous_sender}")
+                continue 
+            
+            weight = message_weights[idx]
+            edge_weights[(current_sender, previous_sender)] += weight
+            print(f"  Sequential: {current_sender} -> {previous_sender} += {weight}")
+        
+        
+        
+        window.append(current_sender)
+        print(f"Window after: {list(window)}")
+        print(f"Current edges: {dict(edge_weights)}")
+
+    return dict(edge_weights)
+
 
 def normalize_links_by_target(
     links: List[Dict[str, Union[str, float]]], 

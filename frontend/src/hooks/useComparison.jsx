@@ -205,7 +205,8 @@ const useComparison = (originalNetworkData, uploadedFile) => {
     index,
     globalFilterParams,
     customFilters = null,
-    isWikipediaData = false
+    isWikipediaData = false,
+    wikiSection = null
   ) => {
     const comparisonFile = comparisonData[index];
     if (
@@ -236,8 +237,7 @@ const useComparison = (originalNetworkData, uploadedFile) => {
 
     let url;
     if (isWikipediaData || comparisonFile.isWikipediaData) {
-      const filename = comparisonFile.filename;
-      url = `${BASE_URL}/analyze/wikipedia/${filename}?${params.toString()}`;
+      url = `${BASE_URL}/analyze/wikipedia/${wikiSection}?${params.toString()}`;
     } else {
       url = `${BASE_URL}/analyze/network/${comparisonFile.filename
         }?${params.toString()}`;

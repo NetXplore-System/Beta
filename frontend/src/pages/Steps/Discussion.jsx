@@ -5,8 +5,6 @@ import DiscussionSectionPicker from "../../components/filters/DiscussionSectionP
 const Discussion = ({
   content,
   onSelect,
-  selectedSection,
-  convertToTxt,
 }) => {
   return (
     <Card className="research-card">
@@ -15,8 +13,6 @@ const Discussion = ({
         <DiscussionSectionPicker
           content={content}
           onSelect={onSelect}
-          selectedSection={selectedSection}
-          convertToTxt={convertToTxt}
         />
       </Card.Body>
     </Card>

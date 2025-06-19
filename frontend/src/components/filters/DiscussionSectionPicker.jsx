@@ -4,51 +4,34 @@ import "../../styles/DiscussionSectionPicker.css";
 const DiscussionSectionPicker = ({
   content,
   onSelect,
-  selectedSection,
-  convertToTxt,
 }) => {
-  const [options, setOptions] = useState([]);
   const [selectedTitle, setSelectedTitle] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [minComments, setMinComments] = useState(0);
   const [sortOrder, setSortOrder] = useState("desc");
 
-  useEffect(() => {
-    if (content) {
-      const sectionsWithReplies = getInteractiveSections(content);
-      setOptions(sectionsWithReplies);
-    }
-  }, [content]);
 
   const handleSelect = async (section) => {
     setSelectedTitle(section.title);
     onSelect(section);
-    try {
-      const result = await convertToTxt(section.title);
-      if (result?.filename) {
-        console.log("Created:", result.filename);
-      }
-    } catch (err) {
-      console.error("Error converting section to TXT:", err);
-    }
   };
 
-  const filteredOptions = options.filter((section) => {
+  const filteredOptions = content.filter((section) => {
     const titleMatch = section.title
       .toLowerCase()
       .includes(searchQuery.toLowerCase());
-    const commentMatch = section.comments.length >= minComments;
+    const commentMatch = section.len_comments >= minComments;
     return titleMatch && commentMatch;
   });
 
   const sortedOptions = [...filteredOptions].sort((a, b) => {
     return sortOrder === "asc"
-      ? a.comments.length - b.comments.length
-      : b.comments.length - a.comments.length;
+      ? a.len_comments - b.len_comments
+      : b.len_comments - a.len_comments;
   });
 
   const totalComments = sortedOptions.reduce(
-    (acc, section) => acc + section.comments.length,
+    (acc, section) => acc + section.len_comments,
     0
   );
 
@@ -92,7 +75,7 @@ const DiscussionSectionPicker = ({
               onClick={() => handleSelect(section)}
               role="button"
               tabIndex="0"
-              onKeyPress={(e) => {
+              onKeyDown={(e) => {
                 if (e.key === "Enter" || e.key === " ") {
                   handleSelect(section);
                 }
@@ -101,7 +84,7 @@ const DiscussionSectionPicker = ({
               <div className="section-card-body">
                 <h4 className="sec-title">{section.title}</h4>
                 <div className="section-badge">
-                  {section.comments.length} Comments
+                  {section.len_comments} Comments
                 </div>
               </div>
             </div>
@@ -118,11 +101,6 @@ const DiscussionSectionPicker = ({
   );
 };
 
-const getInteractiveSections = (content) => {
-  return content
-    .filter((item) => item.type === "talk_page")
-    .flatMap((item) => item.sections)
-    .filter((section) => section.comments && section.comments.length > 0);
-};
+
 
 export default DiscussionSectionPicker;

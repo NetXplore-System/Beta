@@ -346,20 +346,14 @@ const ResearchWizard = () => {
 
     fetchWikipediaData(formData.wikipediaUrl)
       .then((data) => {
-        if (data.nodes && data.links) {
-          setNetworkData(data);
-          setOriginalNetworkData(data);
-          setWikiContent(data.content);
-
-          setFormData((prev) => ({
-            ...prev,
-            uploadedFileName: "wikipedia_data.txt",
-          }));
-          setWikipediaLoaded(true);
-          setIsDataValid(true);
-        } else {
-          setWikipediaUrlError("No valid discussion data found.");
-        }
+        console.log(data)
+        setWikiContent(data);
+        setFormData((prev) => ({
+          ...prev,
+          uploadedFileName: "data.title",
+        }));
+        setWikipediaLoaded((prev) => true);
+        setIsDataValid((prev) => true);
       })
       .catch((err) => {
         setWikipediaUrlError(
@@ -385,41 +379,42 @@ const ResearchWizard = () => {
 
     try {
       if (formData.platform === "wikipedia") {
-        await fetch(
-          `${import.meta.env.VITE_API_URL}/convert-wikipedia-to-txt`,
+        const response = await fetch(
+          `${import.meta.env.VITE_API_URL}/analyze/wikipedia/${selectedSection?.title || "Top"}?${finalParams}`,
           {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            filename: formData.uploadedFileName.replace(".txt", ""), 
-            section_title: selectedSection || "Top",
-          }),
+            method: "GET",
+            headers: {
+              "Content-Type": "application/json",
+            },
           }
         );
 
-        const data = await analyzeNetwork("wikipedia_data", finalParams);
+        if(!response.ok){
+          toast.error(data.message);
+          return;
+        }
 
-            if (data.nodes && data.links) {
-              dispatch(clearImages());
+        const data = await response.json();
+
+        if (data.nodes && data.links) {
+          dispatch(clearImages());
 
           const communityData = await detectWikipediaCommunities(
-            "wikipedia_data",
+            selectedSection?.title,
             finalParams
           );
-              const nodeCommunities = communityData.node_communities || {};
-              const updatedNodes = data.nodes.map((node) => {
-                const community = nodeCommunities[node.id?.toString().trim()];
-                return community !== undefined ? { ...node, community } : node;
-              });
+          const nodeCommunities = communityData.node_communities || {};
+          const updatedNodes = data.nodes.map((node) => {
+            const community = nodeCommunities[node.id?.toString().trim()];
+            return community !== undefined ? { ...node, community } : node;
+          });
 
-              data.nodes = updatedNodes;
-              setNetworkData(data);
-              setOriginalNetworkData(data);
-              setCommunities(communityData.communities || []);
-              setCommunityMap(nodeCommunities);
-            }
+          data.nodes = updatedNodes;
+          setNetworkData(data);
+          setOriginalNetworkData(data);
+          setCommunities(communityData.communities || []);
+          setCommunityMap(nodeCommunities);
+        }
       } else if (formData.platform === "whatsapp") {
         if (hasShownToastRef.current) return;
         hasShownToastRef.current = true;
@@ -429,19 +424,19 @@ const ResearchWizard = () => {
           finalParams
         );
 
-            if (data.nodes && data.links) {
-              dispatch(clearImages());
-              setNetworkData(data);
-              setOriginalNetworkData(data);
+        if (data.nodes && data.links) {
+          dispatch(clearImages());
+          setNetworkData(data);
+          setOriginalNetworkData(data);
 
           const communityData = await detectCommunities(
             formData.uploadedFileName,
             finalParams
           );
-              setCommunities(communityData.communities || []);
-              setCommunityMap(communityData.node_communities || {});
-              setShouldFetchCommunities(true);
-            }
+          setCommunities(communityData.communities || []);
+          setCommunityMap(communityData.node_communities || {});
+          setShouldFetchCommunities(true);
+        }
       } else {
         return;
       }
@@ -508,9 +503,9 @@ const ResearchWizard = () => {
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
 
-    if (name.startsWith('messageWeights')) {
+    if (name.startsWith("messageWeights")) {
       const match = name.match(/messageWeights\[(\d+)\]/);
-      const index = match[1]
+      const index = match[1];
       const newValue = +parseFloat(value).toFixed(1);
       const newMessageWeights = [...formData.messageWeights];
       newMessageWeights[index] = newValue;
@@ -519,16 +514,16 @@ const ResearchWizard = () => {
         toast.info("Total weight must be less than or equal to 1.");
         return;
       }
-      setFormData(prev => ({
+      setFormData((prev) => ({
         ...prev,
-        messageWeights: newMessageWeights
+        messageWeights: newMessageWeights,
       }));
       return;
     }
 
-    if (name.startsWith('historyLength')) {
+    if (name.startsWith("historyLength")) {
       const valueInt = +value;
-      setFormData(prev => ({
+      setFormData((prev) => ({
         ...prev,
         historyLength: valueInt,
         messageWeights: valueInt === 2 ? [0.6, 0.4] : [0.5, 0.3, 0.2],
@@ -548,7 +543,7 @@ const ResearchWizard = () => {
       } else {
         newValue = value;
       }
-      setFormData(prev => ({
+      setFormData((prev) => ({
         ...prev,
         [parent]: {
           ...prev[parent],
@@ -556,7 +551,7 @@ const ResearchWizard = () => {
         },
       }));
     } else {
-      setFormData(prev => ({
+      setFormData((prev) => ({
         ...prev,
         [name]: type === "checkbox" ? checked : value,
       }));
@@ -598,15 +593,16 @@ const ResearchWizard = () => {
     const comparisonData =
       comparison.comparisonNetworkData?.length > 0
         ? {
-      data: comparison.comparisonNetworkData.map((item, index) => ({
-        nodes: item.nodes,
-        links: item.links,
-        filename: comparison.comparisonData[index].filename,
-      })),
-      filters: comparison.comparisonFilterSettings,
+            data: comparison.comparisonNetworkData.map((item, index) => ({
+              nodes: item.nodes,
+              links: item.links,
+              filename: comparison.comparisonData[index].filename,
+            })),
+            filters: comparison.comparisonFilterSettings,
           }
         : {};
 
+    console.log(formData.platform)
     const result = await toast.promise(
       saveToDB(
         id,
@@ -706,30 +702,13 @@ const ResearchWizard = () => {
       case ALL_STEPS.WIKIPEDIA:
         return (
           <Discussion
-            formData={formData}
-            handleInputChange={handleInputChange}
             content={wikiContent}
-            selectedSection={selectedSection}
-            onSelect={setSelectedSection}
-            convertToTxt={async (title) => {
-              const result = await fetch(
-                `${import.meta.env.VITE_API_URL}/convert-wikipedia-to-txt`,
-                {
-                  method: "POST",
-                  headers: {
-                    "Content-Type": "application/json",
-                  },
-                  body: JSON.stringify({
-                    filename: "wikipedia_data",
-                    section_title: title,
-                  }),
-                }
-              );
-
-              const data = await result.json();
-              if (!result.ok)
-                throw new Error(data.detail || "Failed to convert to TXT");
-              return data;
+            onSelect={(section) => {
+              setSelectedSection(section);
+              setFormData((prev) => ({
+                ...prev,
+                uploadedFileName: section.title,
+              }));
             }}
           />
         );
@@ -828,11 +807,11 @@ const ResearchWizard = () => {
 
   const canNavigateToStep = (targetStepIndex) => {
     if (targetStepIndex === 0) return true;
-  
+
     if (!formData.name?.trim()) return false;
     if (!formData.uploadedFileName || !isDataValid) return false;
     if (uploadError) return false;
-  
+
     return true;
   };
 
@@ -858,7 +837,7 @@ const ResearchWizard = () => {
                   key={index}
                   className={`wizard-step ${isCompleted ? "completed" : ""} ${
                     isActive ? "active" : ""
-                    }`}
+                  }`}
                   onClick={() => {
                     if (canNavigateToStep(index)) {
                       setCurrentStep(index + 1);
@@ -936,7 +915,7 @@ const ResearchWizard = () => {
               setShowSaveModal(false);
               try {
                 await handleSaveResearch();
-                setTimeout(() => navigate("/history"), 800);
+                // setTimeout(() => navigate("/history"), 800);
               } catch (err) {
                 toast.error("Failed to save research.");
               }

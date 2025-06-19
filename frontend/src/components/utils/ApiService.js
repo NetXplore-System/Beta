@@ -183,20 +183,8 @@ export const fetchWikipediaData = async (url) => {
       throw new Error(data?.detail || `Server error: ${response.status}`);
     }
 
-    if (data.nodes && data.links && data.content) {
-      return {
-        nodes: data.nodes.map((node) => ({ ...node, id: String(node.id) })),
-        links: data.links.map((link) => ({
-          ...link,
-          source: String(link.source),
-          target: String(link.target),
-        })),
-        content: data.content,
-        opinions: data.opinions || { for: 0, against: 0, neutral: 0 },
-      };
-    } else {
-      throw new Error("No valid discussion data found on this Wikipedia page.");
-    }
+    return data.data;
+    
   } catch (error) {
     console.error("Error loading Wikipedia data:", error);
     throw new Error(error.message || "Failed to fetch Wikipedia data.");
@@ -289,9 +277,9 @@ export const deleteResearch = async (researchId, token) => {
   }
 }
 
-export const detectWikipediaCommunities = async (filename, params) => {
+export const detectWikipediaCommunities = async (section_title, params) => {
   try {
-    const url = `${BASE_URL}/analyze/wikipedia-communities/${filename}?${params.toString()}`;
+    const url = `${BASE_URL}/analyze/wikipedia-communities/${section_title}?${params.toString()}`;
     console.log("Wikipedia community detection URL:", url);
 
     const response = await fetch(url);

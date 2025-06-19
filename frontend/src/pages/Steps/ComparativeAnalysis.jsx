@@ -64,6 +64,8 @@ const ComparativeAnalysis = ({
     comparisonFilterSettings,
   } = comparison;
 
+
+
   const graphMetrics = [
     "Degree Centrality",
     "Betweenness Centrality",
@@ -163,7 +165,8 @@ const ComparativeAnalysis = ({
       index,
       null,
       itemFilters,
-      actualIsWikipediaData
+      actualIsWikipediaData,
+      selectedSection?.title
     )
       .then((result) => {
         if (result && result.success) {
