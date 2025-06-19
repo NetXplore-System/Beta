@@ -170,15 +170,19 @@
   border-color: #050d2d;
 }
 
-.quick-actions-bar .btn-fit {
-  width: 60px;
-  padding: 5px;
+  .quick-actions-bar .btn-fit {
+  min-width: 90px;
+  padding: 6px 12px;
   border-radius: 10px;
   background-color: #f8f9fa;
   color: #050d2d;
   border: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   transition: all 0.3s ease-in-out;
 }
+
 
 .quick-actions-bar .btn-fit:hover {
   background-color: #050d2d;

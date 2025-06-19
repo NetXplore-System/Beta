@@ -436,8 +436,6 @@ const ComparisonItem = ({
           filterUpdated: true,
         });
       }
-
-      toast.success(`Section "${section.title}" selected successfully!`);
       setShowPicker(false);
 
       setTimeout(() => {

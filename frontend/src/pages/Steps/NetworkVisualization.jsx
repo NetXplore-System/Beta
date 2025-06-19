@@ -578,9 +578,11 @@ const NetworkVisualization = ({
       setNetworkWasRestored(false);
     } else {
       const threshold = 0.2;
+
       const filteredNodes = networkData.nodes.filter(
         (node) => node.betweenness >= threshold
       );
+
       const filteredLinks = networkData.links.filter((link) => {
         const sourceId =
           typeof link.source === "object" ? link.source.id : link.source;
@@ -593,7 +595,18 @@ const NetworkVisualization = ({
         );
       });
 
-      setNetworkData({ nodes: filteredNodes, links: filteredLinks });
+      const activeNodeIds = new Set(
+        filteredLinks.flatMap((link) => [
+          typeof link.source === "object" ? link.source.id : link.source,
+          typeof link.target === "object" ? link.target.id : link.target,
+        ])
+      );
+
+      const finalFilteredNodes = filteredNodes.filter((node) =>
+        activeNodeIds.has(node.id)
+      );
+
+      setNetworkData({ nodes: finalFilteredNodes, links: filteredLinks });
       setStrongConnectionsActive(true);
     }
   };
@@ -1678,7 +1691,7 @@ const NetworkVisualization = ({
                       <OverlayTrigger
                         placement="bottom"
                         overlay={
-                          <Tooltip id="fit-tooltip">Reset Network</Tooltip>
+                          <Tooltip id="fit-tooltip">Rearrange Network</Tooltip>
                         }
                       >
                         <Button
@@ -1686,7 +1699,7 @@ const NetworkVisualization = ({
                           className="btn-fit"
                           onClick={handleResetAll}
                         >
-                          Reset
+                          <ArrowsExpand className="me-1" /> Rearrange
                         </Button>
                       </OverlayTrigger>
                     </div>

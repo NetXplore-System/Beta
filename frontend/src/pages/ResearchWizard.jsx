@@ -25,6 +25,7 @@ import {
   fetchWikipediaData,
   // analyzeWikipediaNetwork,
   detectWikipediaCommunities,
+  deleteUploadedFile,
 } from "../components/utils/ApiService";
 import { saveToDB } from "../components/utils/ApiService";
 
@@ -49,6 +50,7 @@ const ResearchWizard = () => {
   const [wikipediaLoaded, setWikipediaLoaded] = useState(false);
   const [isUploadingFile, setIsUploadingFile] = useState(false);
   const [isDataValid, setIsDataValid] = useState(false);
+  const [showDeleteMessage, setShowDeleteMessage] = useState(false);
 
   const ALL_STEPS = {
     SETUP: "Setup",
@@ -346,7 +348,6 @@ const ResearchWizard = () => {
 
     fetchWikipediaData(formData.wikipediaUrl)
       .then((data) => {
-        console.log(data)
         setWikiContent(data);
         setFormData((prev) => ({
           ...prev,
@@ -380,7 +381,9 @@ const ResearchWizard = () => {
     try {
       if (formData.platform === "wikipedia") {
         const response = await fetch(
-          `${import.meta.env.VITE_API_URL}/analyze/wikipedia/${selectedSection?.title || "Top"}?${finalParams}`,
+          `${import.meta.env.VITE_API_URL}/analyze/wikipedia/${
+            selectedSection?.title || "Top"
+          }?${finalParams}`,
           {
             method: "GET",
             headers: {
@@ -389,8 +392,8 @@ const ResearchWizard = () => {
           }
         );
 
-        if(!response.ok){
-          toast.error(data.message);
+        if (!response.ok) {
+          toast.error("Failed to analyze Wikipedia data.");
           return;
         }
 
@@ -602,7 +605,6 @@ const ResearchWizard = () => {
           }
         : {};
 
-    console.log(formData.platform)
     const result = await toast.promise(
       saveToDB(
         id,
@@ -895,19 +897,99 @@ const ResearchWizard = () => {
         <Modal.Header closeButton>
           <Modal.Title>Save Research</Modal.Title>
         </Modal.Header>
-        <Modal.Body>
+        {/* <Modal.Body>
           Would you like to save your research to your account?
+        </Modal.Body> */}
+        <Modal.Body>
+          {showDeleteMessage ? (
+            <div className="text-center">
+              <div className="mt-2 fw-bold text-success">
+                The file was deleted.
+              </div>
+              <div className="text-muted">
+                Redirecting to platform selection...
+              </div>
+            </div>
+          ) : (
+            <>
+              <p>Would you like to save your research to your account?</p>
+              <div
+                style={{
+                  backgroundColor: "#eef6ff",
+                  borderRadius: "6px",
+                  padding: "8px 12px",
+                  fontSize: "0.85rem",
+                  color: "#0c63e4",
+                  marginTop: "10px",
+                }}
+              >
+                <strong>Note:</strong> Clicking <strong>"No, thanks"</strong>{" "}
+                will permanently delete this research and return you to the
+                platform selection screen.
+              </div>
+            </>
+          )}
         </Modal.Body>
+
         <Modal.Footer>
           <Button
             variant="secondary"
-            onClick={() => {
-              setShowSaveModal(false);
-              toast.info("Research completed but was not saved.");
+            onClick={async () => {
+              try {
+                const filesToDelete = [];
+
+                if (formData.uploadedFileName) {
+                  filesToDelete.push(formData.uploadedFileName);
+                  if (formData.platform === "wikipedia") {
+                    filesToDelete.push(
+                      formData.uploadedFileName.replace(".txt", ".json")
+                    );
+                  }
+                }
+
+                if (comparison?.comparisonData?.length > 0) {
+                  for (const file of comparison.comparisonData) {
+                    if (file.filename) {
+                      const txtFilename = file.filename.endsWith(".txt")
+                        ? file.filename
+                        : `${file.filename}.txt`;
+
+                      filesToDelete.push(txtFilename);
+
+                      if (
+                        txtFilename.startsWith("comparison_wikipedia_data_")
+                      ) {
+                        const jsonFilename = txtFilename.replace(
+                          ".txt",
+                          ".json"
+                        );
+                        filesToDelete.push(jsonFilename);
+                      }
+                    }
+                  }
+                }
+
+                for (const filename of filesToDelete) {
+                  try {
+                    await deleteUploadedFile(filename);
+                  } catch (err) {
+                    console.warn("Failed to delete:", filename, err.message);
+                  }
+                }
+
+                setShowDeleteMessage(true);
+                setTimeout(() => {
+                  setShowSaveModal(false);
+                  navigate("/choose-platform");
+                }, 1700);
+              } catch (err) {
+                toast.error("Failed to delete file(s).");
+              }
             }}
           >
             No, thanks
           </Button>
+
           <Button
             variant="primary"
             onClick={async () => {

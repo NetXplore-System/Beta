@@ -294,3 +294,16 @@ export const detectWikipediaCommunities = async (section_title, params) => {
     throw new Error("An error occurred during Wikipedia community detection.");
   }
 };
+
+export const deleteUploadedFile = async (filename) => {
+  const response = await fetch(`${import.meta.env.VITE_API_URL}/delete/${filename}`, {
+    method: "DELETE",
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.detail || "Failed to delete file.");
+  }
+
+  return true;
+};

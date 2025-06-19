@@ -17,24 +17,35 @@ const NetworkGraph = ({
   isDirectedGraph = false,
 }) => {
   const graphParams = useMemo(() => {
-    const nodes = customizedNetworkData
-      ? customizedNetworkData.nodes
-      : filteredNodes;
-    const nodeCount = nodes.length;
+  const nodes = customizedNetworkData
+    ? customizedNetworkData.nodes
+    : filteredNodes;
 
-    const baseNodeSize = Math.max(8, Math.min(20, 100 / Math.sqrt(nodeCount)));
-    const linkDistance = Math.max(30, Math.min(120, 50 + nodeCount * 0.5));
-    const chargeStrength = Math.max(-300, Math.min(-50, -100 - nodeCount * 2));
-    const fontSize = Math.max(10, Math.min(16, 80 / Math.sqrt(nodeCount)));
+  const nodeCount = nodes.length;
 
-    return {
-      baseNodeSize,
-      linkDistance,
-      chargeStrength,
-      fontSize,
-      nodeCount,
-    };
-  }, [customizedNetworkData, filteredNodes]);
+  const baseNodeSize = Math.max(10, Math.min(24, 100 / Math.sqrt(nodeCount)));
+
+  const linkDistance = Math.max(
+    120,
+    Math.min(300, 100 + nodeCount * 2 + baseNodeSize * 3)
+  );
+
+  const chargeStrength = Math.max(
+    -1000,
+    Math.min(-100, -200 - nodeCount * 3 - baseNodeSize * 10)
+  );
+
+  const fontSize = Math.max(10, Math.min(16, 80 / Math.sqrt(nodeCount)));
+
+  return {
+    baseNodeSize,
+    linkDistance,
+    chargeStrength,
+    fontSize,
+    nodeCount,
+  };
+}, [customizedNetworkData, filteredNodes]);
+
 
   useEffect(() => {
     if (forceGraphRef.current && networkData && networkData.nodes) {
@@ -159,7 +170,7 @@ const NetworkGraph = ({
         height={700}
         fitView
         fitViewPadding={100}
-        nodeAutoColorBy={customizedNetworkData ? null : "id"}
+        nodeAutoColorBy={null}
         linkWidth={(link) =>
           Math.max(1, Math.min(5, Math.sqrt(link.weight || 1)))
         }
@@ -280,7 +291,7 @@ const NetworkGraph = ({
                 ? "#dc143c"
                 : selectedMetric === "Degree Centrality"
                 ? "#4169e1"
-                : "#1e90ff");
+                : "#050d2d");
 
           ctx.fillStyle = nodeColor;
           ctx.fill();
