@@ -5,7 +5,7 @@
 
 .research-report-header h2 {
     font-size: 20px;
-    color: #333;
+    color: #050d2d;
     margin: 0;
 }
 
@@ -18,7 +18,7 @@
 }
 
 .research-report-header .close-btn:hover {
-    color: #333;
+    color: #050d2d;
 }
 
 /* Research Report Info */
@@ -35,7 +35,7 @@
 
 .research-report-info p {
     font-size: 14px;
-    color: #555;
+    color: #050d2d;
     margin: 5px 0;
 }
 
@@ -54,7 +54,7 @@
     font-size: 18px;
     width: 100%;
     text-align: left;
-    color: #2c3e50;
+    color: #050d2d;
     padding-bottom: 10px;
     margin-bottom: 15px;
 }
@@ -67,7 +67,7 @@
 
 .research-report-filters li {
     font-size: 14px;
-    color: #555;
+    color: #050d2d;
     margin: 5px 0;
 }
 
@@ -90,13 +90,13 @@
     gap: 10px;
     cursor: pointer;
     font-weight: 500;
-    color: #444;
+    color: #050d2d;
 }
 
 .filter-selection input[type="checkbox"] {
     width: 18px;
     height: 18px;
-    accent-color: #158582;
+    accent-color: #050d2d;
 }
 
 .research-report-images {
@@ -113,7 +113,7 @@
     font-size: 18px;
     width: 100%;
     text-align: left;
-    color: #2c3e50;
+    color: #050d2d;
     padding-bottom: 10px;
     margin-bottom: 15px;
 }
@@ -139,7 +139,7 @@
 .image-selection .image-description {
     width: 100%;
     margin-bottom: 10px;
-    color: #158582;
+    color: #050d2d;
     font-weight: 500;
     font-size: 0.9em;
 }
@@ -160,7 +160,7 @@
 
 .image-selection label {
     font-size: 14px;
-    color: #555;
+    color: #050d2d;
     display: flex;
     align-items: center;
     gap: 10px;
@@ -171,7 +171,7 @@
 .image-selection input[type="checkbox"] {
     width: 18px;
     height: 18px;
-    accent-color: #158582;
+    accent-color: #050d2d;
     position: relative;
     transition: all 0.3s ease;
 }
@@ -190,7 +190,7 @@
     width: 100%;
     padding: 8px 12px;
     font-size: 14px;
-    color: #333;
+    color: #050d2d;
     background: white;
     margin-top: 8px;
     border: 1px solid #ddd;
@@ -219,7 +219,7 @@
     height: 100px;
     padding: 10px;
     font-size: 14px;
-    color: #333;
+    color: #050d2d;
     background: white;
     border: 1px solid #ddd;
     border-radius: 5px;
@@ -239,7 +239,7 @@
 
 .checkbox-group label {
     font-size: 14px;
-    color: #555;
+    color: #050d2d;
 }
 
 /* Research Report Actions */
@@ -291,7 +291,7 @@
 
 .comparison-checkbox label {
     font-size: 14px;
-    color: #444;
+    color: #050d2d;
     font-weight: 500;
     cursor: pointer;
     user-select: none;

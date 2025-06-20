@@ -750,12 +750,28 @@ def save_wikipedia_data(url):
     try:
         data = process_wiki_talk_page(url)
         for section in data:
+            title_counts = {}
+            for other_section in data:
+                if other_section["title"] in title_counts:
+                    title_counts[other_section["title"]] += 1
+                else:
+                    title_counts[other_section["title"]] = 1
+            
+            if title_counts[section["title"]] > 1:
+                current_count = 0
+                for prev_section in data:
+                    if prev_section["title"] == section["title"]:
+                        current_count += 1
+                        if prev_section is section:
+                            break
+                
+                if current_count > 1:
+                    section["title"] = f"{section['title']} ({current_count})"
             for i, comment in enumerate(section["comments"]):
                 comment["writer_name"] = names_writers[comment["writer_name"]] if comment["writer_name"] in names_writers else comment["writer_name"]
                 comment["reply_to"] = names_writers[comment["reply_to"]] if comment["reply_to"] in names_writers else comment["reply_to"]
-                if i == 0:
+                if i == 0 and section["title"] and "-" in section["title"]:
                     comment["reply_to"] = None
-                    
         if data is None:
             logger.error("Failed to extract data - process_wiki_talk_page returned None")
             return None
@@ -777,13 +793,9 @@ def save_wikipedia_data(url):
         return None
 
 def parse_comment_timestamp(timestamp_str: str) -> datetime:
-    """
-    Parse comment timestamp from format "20230608170400" to datetime
-    Format: YYYYMMDDHHMMSS
-    """
+  
     try:
         if len(timestamp_str) >= 14:
-            # Extract parts: YYYYMMDDHHMMSS
             year = int(timestamp_str[0:4])
             month = int(timestamp_str[4:6])
             day = int(timestamp_str[6:8])
@@ -792,7 +804,6 @@ def parse_comment_timestamp(timestamp_str: str) -> datetime:
             second = int(timestamp_str[12:14])
             return datetime(year, month, day, hour, minute, second)
         elif len(timestamp_str) >= 8:
-            # Just date: YYYYMMDD
             year = int(timestamp_str[0:4])
             month = int(timestamp_str[4:6])
             day = int(timestamp_str[6:8])
@@ -802,23 +813,18 @@ def parse_comment_timestamp(timestamp_str: str) -> datetime:
     return None
 
 def create_datetime_range(start_date: str, end_date: str, start_time: Optional[str] = None, end_time: Optional[str] = None):
-    """
-    Create start and end datetime objects from user input
-    """
+
     try:
-        # Parse start date
         start_dt = datetime.strptime(start_date, "%Y-%m-%d")
         if start_time:
             start_time_obj = datetime.strptime(start_time, "%H:%M:%S").time()
             start_dt = datetime.combine(start_dt.date(), start_time_obj)
         
-        # Parse end date
         end_dt = datetime.strptime(end_date, "%Y-%m-%d")
         if end_time:
             end_time_obj = datetime.strptime(end_time, "%H:%M:%S").time()
             end_dt = datetime.combine(end_dt.date(), end_time_obj)
         else:
-            # If no end time specified, use end of day
             end_dt = datetime.combine(end_dt.date(), time(23, 59, 59))
         
         return start_dt, end_dt
@@ -827,9 +833,7 @@ def create_datetime_range(start_date: str, end_date: str, start_time: Optional[s
         return None, None
 
 def filter_comments_by_date(comments: list, start_date: str, end_date: str, start_time: Optional[str] = None, end_time: Optional[str] = None):
-    """
-    Filter comments based on date range
-    """
+
     if not start_date or not end_date:
         return comments
     

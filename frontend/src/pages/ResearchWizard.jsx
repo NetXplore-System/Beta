@@ -348,6 +348,7 @@ const ResearchWizard = () => {
 
     fetchWikipediaData(formData.wikipediaUrl)
       .then((data) => {
+        
         setWikiContent(data);
         setFormData((prev) => ({
           ...prev,

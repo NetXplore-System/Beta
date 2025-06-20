@@ -38,7 +38,7 @@ const styles = StyleSheet.create({
     sectionTitle: {
         fontSize: 16,
         marginBottom: 10,
-        color: '#158582',
+        color: '#050d2d',
         fontWeight: 'bold',
         borderBottom: '1px solid #DDD',
         paddingBottom: 5,
@@ -50,21 +50,21 @@ const styles = StyleSheet.create({
     label: {
         width: '30%',
         fontSize: 12,
-        color: '#555',
+        color: '#050d2d',
         fontWeight: 'bold',
     },
     value: {
         width: '70%',
         fontSize: 12,
-        color: '#333',
+        color: '#050d2d',
     },
     filterItem: {
         margin: 3,
         padding: '3 8',
-        backgroundColor: '#e0f2f1',
+        backgroundColor: '#050d2d',
         borderRadius: 10,
         fontSize: 10,
-        color: '#00796b',
+        color: 'white',
         display: 'inline-block',
     },
     filtersContainer: {
@@ -75,7 +75,7 @@ const styles = StyleSheet.create({
     conclusion: {
         fontSize: 12,
         lineHeight: 1.6,
-        color: '#333',
+        color: '#050d2d',
         textAlign: 'justify',
     },
     comparison: {
@@ -84,19 +84,20 @@ const styles = StyleSheet.create({
         backgroundColor: '#e3f2fd',
         borderRadius: 5,
         fontSize: 12,
-        color: '#1565c0',
+        color: '#050d2d',
         textAlign: 'center',
     },
     metricHighlight: {
-        backgroundColor: '#f0f7f6',
+        backgroundColor: '#F0F2F5',
+        color: 'white',
         padding: 10,
         borderRadius: 5,
         marginTop: 10,
-        borderLeft: '4px solid #158582',
+        borderLeft: '4px solid #050d2d',
     },
     metricText: {
         fontSize: 12,
-        color: '#2a625e',
+        color: '#050d2d',
         fontWeight: 'semibold',
     },
     graphSection: {
@@ -108,7 +109,7 @@ const styles = StyleSheet.create({
     },
     graphTitle: {
         fontSize: 14,
-        color: '#158582',
+        color: '#050d2d',
         marginBottom: 8,
         fontWeight: 'semibold',
     },
@@ -119,7 +120,7 @@ const styles = StyleSheet.create({
     },
     comparisonTitle: {
         fontSize: 14,
-        color: '#1565c0',
+        color: '#050d2d',
         fontWeight: 'bold',
         marginBottom: 5,
         textAlign: 'center',
@@ -176,7 +177,7 @@ const styles = StyleSheet.create({
     tableHeader: {
         width: '20%',
         padding: 10,
-        backgroundColor: '#158582',
+        backgroundColor: '#050d2d',
         fontSize: 11,
         fontWeight: 'bold',
         color: '#FFFFFF',
@@ -188,7 +189,7 @@ const styles = StyleSheet.create({
         padding: 10,
         fontSize: 10,
         textAlign: 'center',
-        color: '#333',
+        color: '#050d2d',
         borderRight: '1px solid #F0F0F0',
         backgroundColor: '#FAFAFA',
     },
@@ -208,7 +209,7 @@ const styles = StyleSheet.create({
         top: 30,
         right: 30,
         fontSize: 10,
-        color: '#666',
+        color: '#050d2d',
     },
     hebrewText: {
         direction: 'rtl',
@@ -217,7 +218,7 @@ const styles = StyleSheet.create({
     },
     imageCaption: {
         fontSize: 10,
-        color: '#666',
+        color: '#050d2d',
         textAlign: 'center',
         marginTop: 5,
     },
@@ -372,7 +373,7 @@ const Report = ({ research, show }) => {
                         </View>
 
                         <View style={styles.comparisonTable} wrap={false}>
-                            <View style={[styles.tableRow, { backgroundColor: '#F5F5F5' }]}>
+                            <View style={[styles.tableRow, { backgroundColor: '#050d2d' }]}>
                                 <Text style={styles.tableHeader}>Community</Text>
                                 <Text style={styles.tableHeader}>Members</Text>
                                 <Text style={styles.tableHeader}>Avg Between</Text>
