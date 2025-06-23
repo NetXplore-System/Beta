@@ -173,6 +173,7 @@ async def analyze_communities(
     active_users: Optional[int] = Query(None),
     selected_users: Optional[str] = Query(None),
     username: Optional[str] = Query(None),
+    keywords: Optional[str] = Query(None),
     anonymize: bool = Query(False),
     directed: bool = Query(False),
     use_history: bool = Query(False),
@@ -220,5 +221,6 @@ async def analyze_communities(
         end_time=end_time,
         algorithm=algorithm,
         history_length=history_length,
-        message_weights=parsed_message_weights
+        message_weights=parsed_message_weights,
+        keywords=keywords
     )

@@ -183,37 +183,35 @@ def calculate_sequential_weights_from_comments(
     elif len(message_weights) != n_prev:
         message_weights = message_weights[:n_prev]
     
-    print(f"Using weights: {message_weights}")
-    print(f"Direct reply weight: 2.0")
-    
-    window: deque = deque(maxlen=n_prev)
+    current_sender = None
+    reply_to_timestamp = None
+    reply_to = None
     edge_weights: Dict[Tuple[str, str], float] = defaultdict(float)
 
     for i, comment in enumerate(sequence):
         current_sender = comment.get('writer_name')
+        reply_to_timestamp = comment.get('reply_to_timestamp')
         reply_to = comment.get('reply_to')
+        sum_comments = 0
         
-        print(f"\nStep {i+1}: {current_sender} (reply_to: {reply_to})")
-        print(f"Window before: {list(window)}")
-        
-        if not current_sender:
+        if not reply_to:
             continue
+        
+        j = i - 1
+        
+        while sum_comments < n_prev and i > 0 and j >= 0:
+            print(f"sum_comments: {sum_comments}, i: {i}, j: {j}")
+            reply_to_sender = sequence[j].get('writer_name')
+            timestamp = sequence[j].get('timestamp')
             
-        # Sequential weight calculation
-        for idx, previous_sender in enumerate(reversed(window)):
-            if previous_sender == current_sender:  
-                print(f"  Skip same sender: {previous_sender}")
-                continue 
-            
-            weight = message_weights[idx]
-            edge_weights[(current_sender, previous_sender)] += weight
-            print(f"  Sequential: {current_sender} -> {previous_sender} += {weight}")
+            if reply_to_sender and reply_to_sender != current_sender and timestamp == reply_to_timestamp:
+                edge_weights[(current_sender, reply_to_sender)] += message_weights[sum_comments]
+                print(f"  Direct reply: {current_sender} -> {reply_to_sender} += {message_weights[sum_comments]}")
+                sum_comments += 1
+                current_sender = sequence[j]
+                
+            j -= 1
         
-        
-        
-        window.append(current_sender)
-        print(f"Window after: {list(window)}")
-        print(f"Current edges: {dict(edge_weights)}")
 
     return dict(edge_weights)
 

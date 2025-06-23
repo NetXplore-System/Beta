@@ -313,7 +313,7 @@ async def analyze_wikipedia(
             count_msg_per_user = dict(top_users)
             filtered_comments = [c for c in filtered_comments if c["writer_name"] in count_msg_per_user.keys()]
         
-        if use_history:
+        if directed and use_history:
             parsed_weights = json.loads(message_weights)
             history_n = int(history_length) if history_length else 3
             edges = calculate_sequential_weights_from_comments(filtered_comments, n_prev=history_n, message_weights=parsed_weights)
@@ -422,7 +422,7 @@ async def analyze_wikipedia(
         messages = [comment.get('text', '') for comment in filtered_comments] if include_messages else None
         
         
-        logger.info(f"Filtered {len(comments)} comments to {len(filtered_comments)} comments")
+        logger.info(f"Filtered {len(comments)} comments to {filtered_comments} comments")
         
         return JSONResponse(content={"messages": messages, "nodes": nodes_list, "links": links_list, "is_connected": is_connected}, status_code=200)
         
@@ -576,7 +576,7 @@ def extract_comment_data(next_sibling):
                 break
         
         if end_span:
-            sender, reply_to_from_end, sender_timestamp = extract_sender_and_reply_from_end_and_sender_timestamp(end_span.get("data-mw-comment-end"))
+            sender, reply_to_from_end, sender_timestamp, reply_to_timestamp = extract_sender_reply_and_timestamp(end_span.get("data-mw-comment-end"))
             reply_to = reply_to_from_end
             timestamp = sender_timestamp
             user_links = comment_element.find_all("a", href=True)
@@ -608,7 +608,7 @@ def extract_comment_data(next_sibling):
                         end_span = span
                         break
                 if end_span:
-                    sender, reply_to_from_end, sender_timestamp = extract_sender_and_reply_from_end_and_sender_timestamp(end_span.get("data-mw-comment-end"))
+                    sender, reply_to_from_end, sender_timestamp, reply_to_timestamp = extract_sender_reply_and_timestamp(end_span.get("data-mw-comment-end"))
                     reply_to = reply_to_from_end
                     timestamp = sender_timestamp
                     user_links = current_sibling_direct.find_all("a", href=True)
@@ -632,6 +632,7 @@ def extract_comment_data(next_sibling):
                 "writer_name": writer_name,
                 "text": comment_text,
                 "timestamp": timestamp,
+                "reply_to_timestamp": reply_to_timestamp
             }
             
             return comment_data, siblings_traversed 
@@ -687,10 +688,10 @@ def get_writer_name_from_links(user_links):
     return None
 
 
-def extract_sender_and_reply_from_end_and_sender_timestamp(comment_end_value):
+def extract_sender_reply_and_timestamp(comment_end_value):
     
     if not comment_end_value or not comment_end_value.startswith("c-"):
-        return None, None, None
+        return None, None, None, None
     
     parts = comment_end_value[2:].split("-")
     
@@ -699,20 +700,24 @@ def extract_sender_and_reply_from_end_and_sender_timestamp(comment_end_value):
         sender = parts[0].replace("_", " ") if len(parts) == 4 else parts[0].replace("_", " ") + " " + parts[1].replace("_", " ")
         reply_to = parts[2].replace("_", " ") if len(parts) == 4 else parts[3].replace("_", " ") 
         sender_timestamp = parts[1] if len(parts) == 4 else parts[2]
+        reply_to_timestamp = parts[3] if len(parts) == 4 else parts[4]
         
         if len(parts) > 4 and parts[1].replace("_", " ").isdigit():
             sender = parts[0].replace("_", " ")
             reply_to = parts[2].replace("_", " ") + " " + parts[3].replace("_", " ")
             sender_timestamp = parts[1]
-       
-        
-        return sender, reply_to, sender_timestamp
+            reply_to_timestamp = parts[3]
+            
+        if not reply_to_timestamp.isdigit() and len(parts) > 4:
+            reply_to_timestamp = parts[4]
+
+        return sender, reply_to, sender_timestamp, reply_to_timestamp
     elif len(parts) >= 2:
         sender = parts[0].replace("_", " ")
         timestamp = parts[1]
-        return sender, None, timestamp
+        return sender, None, timestamp, None
     
-    return None, None, None
+    return None, None, None, None
 
 
 def get_direct_element(element):

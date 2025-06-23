@@ -295,7 +295,7 @@ def build_graph_from_txt(
     print(f"Unique users found: {len(usernames)}")
     print(f"Total messages: {len(all_messages)}")
 
-    if use_history:
+    if directed and use_history:
         print("Using history algorithm for edge weights...")
         history_n = int(history_length) if history_length else 3
         edges = calculate_sequential_weights(all_messages, n_prev=history_n, message_weights=message_weights)
