@@ -51,6 +51,8 @@ const ResearchWizard = () => {
   const [isUploadingFile, setIsUploadingFile] = useState(false);
   const [isDataValid, setIsDataValid] = useState(false);
   const [showDeleteMessage, setShowDeleteMessage] = useState(false);
+  const [linkDistanceMultiplier, setLinkDistanceMultiplier] = useState(0.2); 
+
 
   const ALL_STEPS = {
     SETUP: "Setup",
@@ -764,6 +766,9 @@ const ResearchWizard = () => {
             message={message}
             setMessage={setMessage}
             shouldShowUserFilters={shouldShowUserFilters}
+            linkDistanceMultiplier={linkDistanceMultiplier}
+              setLinkDistanceMultiplier={setLinkDistanceMultiplier} 
+
           />
         );
       case ALL_STEPS.COMPARATIVE_ANALYSIS:

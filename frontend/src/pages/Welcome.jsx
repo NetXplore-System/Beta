@@ -23,6 +23,7 @@ import {
 } from "react-icons/fa";
 import NetworkAnimation from "../components/NetworkAnimation";
 import NetworkMockupVisualization from "../components/NetworkMockupVisualization";
+import VideoPopup from "../components/utils/VideoPopup";
 import "../styles/Welcome.css";
 
 const sections = [
@@ -162,7 +163,6 @@ const FeatureBadge = ({ text }) => {
   );
 };
 
-
 const FeatureSection = ({ section, index }) => {
   const controls = useAnimation();
   const ref = useRef(null);
@@ -281,8 +281,6 @@ const FeatureSection = ({ section, index }) => {
   );
 };
 
-
-
 const DataSourceBadge = ({ icon, text }) => {
   return (
     <motion.div whileHover={{ y: -5, scale: 1.05 }} className="data-badge">
@@ -294,6 +292,7 @@ const DataSourceBadge = ({ icon, text }) => {
 
 const Welcome = () => {
   const navigate = useNavigate();
+  const [showVideo, setShowVideo] = useState(false);
   const [scrollY, setScrollY] = useState(0);
   const titleRef = useRef(null);
   const subtitleRef = useRef(null);
@@ -531,9 +530,9 @@ const Welcome = () => {
             >
               <AnimatedButton
                 variant="primary"
-                onClick={() => navigate("/choose-platform")}
+                onClick={() => setShowVideo(true)}
               >
-                Start Analyzing
+                Watch Demo
               </AnimatedButton>
             </motion.div>
 
@@ -575,6 +574,12 @@ const Welcome = () => {
           </motion.div>
         </div>
       </section>
+
+      <VideoPopup
+        show={showVideo}
+        onHide={() => setShowVideo(false)}
+        videoUrl="https://www.youtube.com/embed/cnRZiUUJspU"
+      />
 
       <footer className="footer">
         <div className="container">

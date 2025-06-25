@@ -25,7 +25,6 @@ import {
   Badge,
 } from "react-bootstrap";
 
-
 import Loader from "../components/utils/Loader";
 import Modal from "../components/utils/Modal";
 import ResearchHistory from "../components/utils/ResearcHistoryComp";
@@ -99,17 +98,17 @@ const History = () => {
     );
   };
 
-
   const closeModal = () => {
     setResearch(null);
   };
 
   useEffect(() => {
     async function getUserHistory() {
+      if (!user?.currentUser?.id) return;
       try {
         setLoading(true);
         const history = await fetch(
-          `${import.meta.env.VITE_API_URL}/history/${user?.currentUser?.id}`,
+          `${import.meta.env.VITE_API_URL}/history/${user.currentUser.id}`,
           {
             headers: {
               Authorization: `Bearer ${user?.token}`,
@@ -118,7 +117,6 @@ const History = () => {
         );
         if (!history.ok) {
           const { detail } = await history.json();
-          console.error("Error response:", detail);
           toast.error("Error fetching user history");
           return;
         }
@@ -138,14 +136,14 @@ const History = () => {
           }
         }
       } catch (error) {
-        console.error("Error fetching user history:", error);
         toast.error("Error fetching user history");
       } finally {
         setLoading(false);
       }
     }
+
     getUserHistory();
-  }, [user]);
+  }, [user?.currentUser?.id]);
 
   const handleSort = (key) => {
     let direction = "asc";

@@ -15,6 +15,8 @@ const NetworkGraph = ({
   networkWasRestored = false,
   forceGraphRef,
   isDirectedGraph = false,
+  linkDistanceMultiplier = 1
+
 }) => {
   const graphParams = useMemo(() => {
   const nodes = customizedNetworkData
@@ -26,8 +28,10 @@ const NetworkGraph = ({
   const baseNodeSize = Math.max(10, Math.min(24, 100 / Math.sqrt(nodeCount)));
 
   const linkDistance = Math.max(
-    120,
-    Math.min(300, 100 + nodeCount * 2 + baseNodeSize * 3)
+    // 120,
+    10,
+    // Math.min(300, 100 + nodeCount * 2 + baseNodeSize * 3)
+    Math.min(300, (100 + nodeCount * 2 + baseNodeSize * 3) * linkDistanceMultiplier)
   );
 
   const chargeStrength = Math.max(
@@ -44,7 +48,7 @@ const NetworkGraph = ({
     fontSize,
     nodeCount,
   };
-}, [customizedNetworkData, filteredNodes]);
+}, [customizedNetworkData, filteredNodes,linkDistanceMultiplier]);
 
 
   useEffect(() => {
@@ -76,6 +80,17 @@ const NetworkGraph = ({
       return () => clearTimeout(timeout);
     }
   }, [networkData, customizedNetworkData, selectedMetric, graphParams]);
+
+  useEffect(() => {
+  if (forceGraphRef.current && typeof forceGraphRef.current.d3Force === "function") {
+    const linkForce = forceGraphRef.current.d3Force("link");
+    if (linkForce?.distance) {
+      linkForce.distance(() => graphParams.linkDistance);
+      forceGraphRef.current.d3ReheatSimulation?.();
+    }
+  }
+}, [linkDistanceMultiplier, graphParams.linkDistance]);
+
 
   useEffect(() => {
     const timeout = setTimeout(() => {
@@ -380,6 +395,13 @@ const NetworkGraph = ({
             );
           }
 
+ctx.beginPath();
+ctx.arc(node.x, node.y, radius, 0, 2 * Math.PI, false);
+ctx.closePath();
+ctx.fillStyle = "rgba(0, 0, 0, 0)";
+ctx.fill();
+
+
           ctx.restore();
         }}
         onNodeHover={(node) => {
@@ -404,6 +426,7 @@ NetworkGraph.propTypes = {
   networkWasRestored: PropTypes.bool,
   forceGraphRef: PropTypes.object,
   isDirectedGraph: PropTypes.bool,
+  linkDistanceMultiplier: PropTypes.number,
 };
 
 export default NetworkGraph;

@@ -77,6 +77,8 @@ const NetworkVisualization = ({
   message,
   setMessage,
   shouldShowUserFilters = true,
+  linkDistanceMultiplier,
+  setLinkDistanceMultiplier,
 }) => {
   const dispatch = useDispatch();
   const forceGraphRef = useRef(null);
@@ -569,47 +571,61 @@ const NetworkVisualization = ({
     }
   };
 
-  const handleStrongConnections = () => {
-    if (!networkData) return;
+const handleStrongConnections = () => {
+  if (!networkData) return;
 
-    if (strongConnectionsActive) {
-      setNetworkData(originalNetworkData);
-      setStrongConnectionsActive(false);
-      setNetworkWasRestored(false);
-    } else {
-      const threshold = 0.2;
+  if (strongConnectionsActive) {
+    setNetworkData(originalNetworkData);
+    setStrongConnectionsActive(false);
+    setNetworkWasRestored(false);
+  } else {
+    const allBetweenness = networkData.nodes.map((n) => n.betweenness || 0);
+    const maxBetweenness = Math.max(...allBetweenness);
+    const threshold = maxBetweenness * 0.5; 
 
-      const filteredNodes = networkData.nodes.filter(
-        (node) => node.betweenness >= threshold
+    const filteredNodes = networkData.nodes.filter(
+      (node) => (node.betweenness || 0) >= threshold
+    );
+
+    const filteredLinks = networkData.links.filter((link) => {
+      const sourceId =
+        typeof link.source === "object" ? link.source.id : link.source;
+      const targetId =
+        typeof link.target === "object" ? link.target.id : link.target;
+
+      return (
+        filteredNodes.some((node) => node.id === sourceId) &&
+        filteredNodes.some((node) => node.id === targetId)
       );
+    });
 
-      const filteredLinks = networkData.links.filter((link) => {
-        const sourceId =
-          typeof link.source === "object" ? link.source.id : link.source;
-        const targetId =
-          typeof link.target === "object" ? link.target.id : link.target;
+    const activeNodeIds = new Set(
+      filteredLinks.flatMap((link) => [
+        typeof link.source === "object" ? link.source.id : link.source,
+        typeof link.target === "object" ? link.target.id : link.target,
+      ])
+    );
 
-        return (
-          filteredNodes.some((node) => node.id === sourceId) &&
-          filteredNodes.some((node) => node.id === targetId)
-        );
-      });
+    const finalFilteredNodes = filteredNodes.filter((node) =>
+      activeNodeIds.has(node.id)
+    );
 
-      const activeNodeIds = new Set(
-        filteredLinks.flatMap((link) => [
-          typeof link.source === "object" ? link.source.id : link.source,
-          typeof link.target === "object" ? link.target.id : link.target,
-        ])
-      );
+    if (finalFilteredNodes.length === 0 && filteredNodes.length > 0) {
+      const topNode = [...filteredNodes].sort(
+        (a, b) => (b.betweenness || 0) - (a.betweenness || 0)
+      )[0];
 
-      const finalFilteredNodes = filteredNodes.filter((node) =>
-        activeNodeIds.has(node.id)
-      );
-
-      setNetworkData({ nodes: finalFilteredNodes, links: filteredLinks });
+      setNetworkData({ nodes: [topNode], links: [] });
       setStrongConnectionsActive(true);
+      toast.info("Only top node shown due to low betweenness values.");
+      return;
     }
-  };
+
+    setNetworkData({ nodes: finalFilteredNodes, links: filteredLinks });
+    setStrongConnectionsActive(true);
+  }
+};
+
 
   const handleRestoreNetwork = () => {
     setNetworkWasRestored((prev) => !prev);
@@ -1049,6 +1065,28 @@ const NetworkVisualization = ({
                 </OverlayTrigger>
               ))}
             </div>
+            <div className="mt-4">
+              <label htmlFor="linkDistanceSlider" className="form-label fw-bold">
+  Link Distance Multiplier: {linkDistanceMultiplier.toFixed(2)}x
+</label>
+
+    <input
+  type="range"
+  id="linkDistanceSlider"
+  className="form-range"
+  min="0.01"
+  max="5"
+  step="0.01"
+  value={linkDistanceMultiplier}
+  onChange={(e) =>
+    setLinkDistanceMultiplier(parseFloat(e.target.value))
+  }
+  style={{ width: "100%" }}
+/>
+
+
+
+            </div>
 
             {selectedMetric && (
               <div className="metric-actions mt-3">
@@ -1088,6 +1126,7 @@ const NetworkVisualization = ({
                     : "Show Strong Connections"}
                 </Button>
               </div>
+              
               <div className="filter-group mb-3">
                 <div className="filter-label mb-2">Node Removal</div>
                 <Button
@@ -1725,6 +1764,8 @@ const NetworkVisualization = ({
                     networkWasRestored={networkWasRestored}
                     forceGraphRef={forceGraphRef}
                     isDirectedGraph={isDirectedGraph}
+                    linkDistanceMultiplier={linkDistanceMultiplier}
+                    setLinkDistanceMultiplier={setLinkDistanceMultiplier}
                   />
                 </div>
 
