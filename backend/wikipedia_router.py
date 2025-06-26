@@ -8,6 +8,7 @@ import json
 import traceback
 from typing import Optional
 from datetime import datetime, time
+import re
 import unicodedata as ud
 import networkx as nx
 from community import community_louvain
@@ -20,7 +21,7 @@ from utils import (
 
 router = APIRouter()
 logger = logging.getLogger("wikipedia")
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.DEBUG) 
 logger.setLevel(logging.DEBUG)
 
 
@@ -217,7 +218,6 @@ async def analyze_wikipedia(
     content_filter: Optional[str] = None,
 ):
     try:
-        # Convert query parameters to proper types
         username = str(username) if username is not None else None
         keywords = str(keywords) if keywords is not None else None  
         content_filter = str(content_filter) if content_filter is not None else None
@@ -238,7 +238,7 @@ async def analyze_wikipedia(
         
         comments = data.get("comments", [])
         filtered_comments = comments
-        count_msg_per_user = {}
+        count_msg_per_user = defaultdict(int)
         usernames = set()
         edges_counter = defaultdict(int)
         is_connected = False
@@ -248,9 +248,11 @@ async def analyze_wikipedia(
         
         if min_length:
             filtered_comments = [c for c in filtered_comments if len(c.get("text", "")) >= min_length]
+            
         
         if max_length:
             filtered_comments = [c for c in filtered_comments if len(c.get("text", "")) <= max_length]
+            print(f"Filtered to {len(filtered_comments)} comments with max length {max_length}")
         
         if keywords:
             keyword_list = [ud.normalize("NFKC", k.strip()) for k in keywords.split(",")]
@@ -268,11 +270,28 @@ async def analyze_wikipedia(
                 if ud.normalize("NFC", content_filter) in ud.normalize("NFC", c.get("text", ""))
             ]
         
-        if limit:
-            if limit_type == "first":
-                filtered_comments = filtered_comments[:limit]
-            elif limit_type == "last":
-                filtered_comments = filtered_comments[-limit:]
+        if directed and use_history:
+            if limit:
+                if limit_type == "last":
+                    filtered_comments = filtered_comments[-limit:]
+                else:
+                    filtered_comments = filtered_comments[:limit]
+            else:
+                if limit_type == "last":
+                    filtered_comments = filtered_comments[::-1]
+                else:
+                    filtered_comments = filtered_comments
+        else:
+            if limit:
+                if limit_type == "last":
+                    filtered_comments = filtered_comments[-limit:][::-1]
+                else:
+                    filtered_comments = filtered_comments[:limit]
+            else:
+                if limit_type == "last":
+                    filtered_comments = filtered_comments[::-1]
+                else:
+                    filtered_comments = filtered_comments
                 
         for c in filtered_comments:
             writer_name = c["writer_name"]
@@ -300,18 +319,23 @@ async def analyze_wikipedia(
             
                 
 
-        if min_messages:
-            filtered_comments = [c for c in filtered_comments if count_msg_per_user[c["writer_name"]] >= min_messages]
-            
-        if max_messages:
-            filtered_comments = [c for c in filtered_comments if count_msg_per_user[c["writer_name"]] <= max_messages]
+        if min_messages or max_messages or active_users or selected_users:
         
-        count_msg_per_user = dict(sorted(count_msg_per_user.items(), key=lambda x: x[1], reverse=True))
-        
-        if active_users:
-            top_users = list(count_msg_per_user.items())[:active_users]
-            count_msg_per_user = dict(top_users)
-            filtered_comments = [c for c in filtered_comments if c["writer_name"] in count_msg_per_user.keys()]
+            filtered_users = {u: c for u, c in count_msg_per_user.items()
+                            if (not min_messages or min_messages == '' or c >= int(min_messages)) and
+                                (not max_messages or max_messages == '' or c <= int(max_messages))}
+
+            if active_users and active_users != '':
+                sorted_users = sorted(filtered_users.items(), key=lambda x: x[1], reverse=True)
+                filtered_users = dict(sorted_users[:int(active_users)])
+                print(f"Filtered to top {active_users} active users")
+
+            if selected_users:
+                selected_set = set([u.strip().lower() for u in selected_users.split(",")])
+                filtered_users = {u: c for u, c in filtered_users.items() if u.lower() in selected_set}
+                print(f"Filtered to selected users: {len(filtered_users)}")
+
+            usernames = set(filtered_users.keys())
         
         if directed and use_history:
             parsed_weights = json.loads(message_weights)
@@ -325,14 +349,11 @@ async def analyze_wikipedia(
                 if c["writer_name"] != c["reply_to"] and c["reply_to"] is not None:
                     edge = (c["writer_name"], c["reply_to"]) if directed else tuple(sorted([c["writer_name"], c["reply_to"]]))
                     edges_counter[edge] += 1
-
-        usernames = set(count_msg_per_user.keys())
-        print(f"count_msg_per_user: {count_msg_per_user}")
-        print(f"Usernames extracted from count_msg_per_user: {usernames}")
-        print(f"edges_counter: {edges_counter}")
         
         G = nx.DiGraph() if directed else nx.Graph()
         G.add_nodes_from(usernames)
+        
+        print(f"usernames: {usernames}")
 
         for edge, weight in edges_counter.items():
             if edge[0] in usernames and edge[1] in usernames:
@@ -422,7 +443,7 @@ async def analyze_wikipedia(
         messages = [comment.get('text', '') for comment in filtered_comments] if include_messages else None
         
         
-        logger.info(f"Filtered {len(comments)} comments to {filtered_comments} comments")
+        logger.info(f"Filtered {len(comments)} comments to {len(filtered_comments)} comments, {len(nodes_list)} nodes")
         
         return JSONResponse(content={"messages": messages, "nodes": nodes_list, "links": links_list, "is_connected": is_connected}, status_code=200)
         
@@ -648,19 +669,24 @@ def extract_comment_data(next_sibling):
             logger.error(f"next_sibling name: {next_sibling.name}")
         logger.error(f"Traceback: {traceback.format_exc()}")
         return None, 0
+    
+def get_clean_text(text: str, writer_name: str) -> str:
    
-def get_clean_text(text, writer_name):
+    if not text:
+        return ""
 
-    if writer_name in text:
-        signature_start = text.rfind(writer_name)
-        if signature_start > 0:
-            clean_text = text[:signature_start].strip()
-        else:
-            clean_text = text
-    else:
-        clean_text = text
-        
-    return clean_text
+    original = text = text.strip()
+
+    pattern = re.compile(rf"(.*?)\b{re.escape(writer_name)}\b.*$", re.DOTALL)
+
+    match = pattern.match(text)
+    if match:
+        clean = match.group(1).rstrip()
+        return clean
+
+    print(f"Writer name '{writer_name}' not found at end of comment. Returning original text. Original text: {original}")
+    return original
+
 
 def get_writer_name_from_links(user_links):
    

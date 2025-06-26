@@ -268,19 +268,29 @@ def build_graph_from_txt(
 
     print(f"Messages after platform-specific filtering: {len(filtered_lines)}")
 
-    if limit and limit != '' and int(limit) > 0:
-        original_count = len(filtered_lines)
-        if limit_type == "last":
-            filtered_lines = filtered_lines[-int(limit):]
-        elif limit_type == "random":
-            import random
-            random.shuffle(filtered_lines)
-            filtered_lines = filtered_lines[:int(limit)]
-        else:  
-            filtered_lines = filtered_lines[:int(limit)]
+    if directed and use_history:
+        if limit:
+            if limit_type == "last":
+                filtered_lines = filtered_lines[-limit:]
+            else:
+                filtered_lines = filtered_lines[:limit]
+        else:
+            if limit_type == "last":
+                filtered_lines = filtered_lines[::-1]
+            else:
+                filtered_lines = filtered_lines
+    else:
+        if limit:
+            if limit_type == "last":
+                filtered_lines = filtered_lines[-limit:][::-1]
+            else:
+                filtered_lines = filtered_lines[:limit]
+        else:
+            if limit_type == "last":
+                filtered_lines = filtered_lines[::-1]
+            else:
+                filtered_lines = filtered_lines
         
-        print(f"Applied limit filter: {original_count} -> {len(filtered_lines)} messages")
-
     all_messages = []
     for user, text in filtered_lines:
         if anonymize:

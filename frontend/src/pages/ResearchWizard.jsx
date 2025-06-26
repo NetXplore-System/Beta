@@ -409,7 +409,7 @@ const ResearchWizard = () => {
             selectedSection?.title,
             finalParams
           );
-          const nodeCommunities = communityData.node_communities || {};
+          const nodeCommunities = communityData?.node_communities || {};
           const updatedNodes = data.nodes.map((node) => {
             const community = nodeCommunities[node.id?.toString().trim()];
             return community !== undefined ? { ...node, community } : node;
@@ -418,7 +418,7 @@ const ResearchWizard = () => {
           data.nodes = updatedNodes;
           setNetworkData(data);
           setOriginalNetworkData(data);
-          setCommunities(communityData.communities || []);
+          setCommunities(communityData?.communities || []);
           setCommunityMap(nodeCommunities);
         }
       } else if (formData.platform === "whatsapp") {

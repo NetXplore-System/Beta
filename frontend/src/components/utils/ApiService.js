@@ -222,17 +222,6 @@ export const saveToDB = async (
       formData.append("comparison_filters", JSON.stringify(comparison.filters));
     }
 
-    params.set("platform", platform);
-    params.set("message_weights", JSON.stringify([0.5, 0.3, 0.2]));
-    params.set("limit", "50");
-    params.set("limit_type", "first");
-    params.set("anonymize", "false");
-    params.set("normalize", "false");
-    params.set("directed", "false");
-    params.set("use_history", "false");
-    params.set("include_messages", "true");
-    params.set("history_length", "3");
-
     const response = await fetch(
       `${BASE_URL}/save-research?${params.toString()}`,
       {
@@ -291,7 +280,6 @@ export const detectWikipediaCommunities = async (section_title, params) => {
     return await response.json();
   } catch (error) {
     console.error("Error during Wikipedia community detection:", error);
-    throw new Error("An error occurred during Wikipedia community detection.");
   }
 };
 

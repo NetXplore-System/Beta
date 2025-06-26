@@ -169,52 +169,42 @@ def calculate_sequential_weights(
     return dict(edge_weights)
 
 
+
 def calculate_sequential_weights_from_comments(
     sequence: List[Dict],
     n_prev: int = 3,
-    message_weights: List[float] = None
+    message_weights: List[float] | None = None
 ) -> Dict[Tuple[str, str], float]:
-    
-    if n_prev < 1:
-        raise ValueError("n_prev must be at least 1")
-    
+
     if message_weights is None:
-        message_weights = [1.0] * n_prev
-    elif len(message_weights) != n_prev:
-        message_weights = message_weights[:n_prev]
-    
-    current_sender = None
-    reply_to_timestamp = None
-    reply_to = None
+        message_weights = [1.0 / (2 ** k) for k in range(n_prev)]
+    else:
+        message_weights = (message_weights + [1.0] * n_prev)[:n_prev]
+
+    index_of_ts = {c["timestamp"]: idx for idx, c in enumerate(sequence)}
+
     edge_weights: Dict[Tuple[str, str], float] = defaultdict(float)
 
-    for i, comment in enumerate(sequence):
-        current_sender = comment.get('writer_name')
-        reply_to_timestamp = comment.get('reply_to_timestamp')
-        reply_to = comment.get('reply_to')
-        sum_comments = 0
-        
-        if not reply_to:
-            continue
-        
-        j = i - 1
-        
-        while sum_comments < n_prev and i > 0 and j >= 0:
-            print(f"sum_comments: {sum_comments}, i: {i}, j: {j}")
-            reply_to_sender = sequence[j].get('writer_name')
-            timestamp = sequence[j].get('timestamp')
-            
-            if reply_to_sender and reply_to_sender != current_sender and timestamp == reply_to_timestamp:
-                edge_weights[(current_sender, reply_to_sender)] += message_weights[sum_comments]
-                print(f"  Direct reply: {current_sender} -> {reply_to_sender} += {message_weights[sum_comments]}")
-                sum_comments += 1
-                current_sender = sequence[j]
-                
-            j -= 1
-        
+    for idx, comment in enumerate(sequence):
+        child_sender = comment.get("writer_name")
+        parent_ts   = comment.get("reply_to_timestamp")
+        depth       = 0
+
+        while parent_ts and depth < n_prev:
+            parent_idx = index_of_ts.get(parent_ts)
+            if parent_idx is None:
+                break
+
+            parent_comment = sequence[parent_idx]
+            parent_sender  = parent_comment.get("writer_name")
+
+            if parent_sender and parent_sender != child_sender:
+                edge_weights[(child_sender, parent_sender)] += message_weights[depth]
+
+            parent_ts = parent_comment.get("reply_to_timestamp")
+            depth    += 1
 
     return dict(edge_weights)
-
 
 def normalize_links_by_target(
     links: List[Dict[str, Union[str, float]]], 
