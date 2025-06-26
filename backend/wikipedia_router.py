@@ -3,8 +3,6 @@ from fastapi.responses import JSONResponse
 from collections import defaultdict
 import requests
 from bs4 import BeautifulSoup
-from bs4.element import NavigableString, Tag
-import html
 import logging
 import json
 import traceback
@@ -489,11 +487,6 @@ def process_wiki_talk_page(url):
         title = div.find("h2").get_text(strip=True)
         sum_comments = div.find("span", class_="ext-discussiontools-init-section-commentCountLabel").get_text(strip=True)
         next_sibling = div.find_next_sibling()
-        if i == 5:
-            for i in range(5):
-                print(f"{next_sibling.prettify()}")
-                next_sibling = next_sibling.find_next_sibling()
-        next_sibling = div.find_next_sibling()
         
         data = []
         
@@ -545,9 +538,6 @@ def process_wiki_talk_page(url):
                     nested_dl = dd.find("dl")
                     if nested_dl:
                         process_nested_replies(nested_dl, data)
-                        
-            if next_sibling is None:
-                break
             
             next_sibling = next_sibling.find_next_sibling()
                 
@@ -585,10 +575,7 @@ def process_nested_replies(nested_dl, data):
 def extract_comment_data(next_sibling):
     
     try:
-        # sig = next_sibling.find("span", attrs={"data-mw-comment-sig": True})
-        # comment_element = sig.parent if sig else get_direct_element(next_sibling)
         comment_element = get_direct_element(next_sibling)
-
         
         if comment_element is None:
             logger.error(f"next_sibling type: {type(next_sibling)}")
@@ -617,7 +604,9 @@ def extract_comment_data(next_sibling):
             writer_name = get_writer_name_from_links(user_links)
             if writer_name:
                 names_writers[sender] = writer_name
-            comment_text = get_clean_text(comment_element, writer_name if writer_name else sender)
+            else:
+                print(f"writer_name is None, sender: {sender}")
+            comment_text = get_clean_text(comment_element.get_text(strip=True), writer_name if writer_name else sender)
             writer_name = sender
             
         else:
@@ -649,7 +638,7 @@ def extract_comment_data(next_sibling):
                         names_writers[sender] = writer_name
                     else:
                         print(f"writer_name is None, sender: {sender}")
-                    comment_text += " " + get_clean_text(None, writer_name if writer_name else sender, sibling_text)
+                    comment_text += " " + get_clean_text(sibling_text, writer_name if writer_name else sender)
                     writer_name = sender
                     break
                 else:
@@ -664,7 +653,7 @@ def extract_comment_data(next_sibling):
                 "writer_name": writer_name,
                 "text": comment_text,
                 "timestamp": timestamp,
-                "reply_to_timestamp": reply_to_timestamp
+                "reply_to_timestamp": reply_to_timestamp if reply_to_timestamp and reply_to_timestamp.isdigit() else None
             }
             
             return comment_data, siblings_traversed 
@@ -681,46 +670,25 @@ def extract_comment_data(next_sibling):
         logger.error(f"Traceback: {traceback.format_exc()}")
         return None, 0
     
-def get_clean_text(comment_element: Tag | None, writer_name: str, sibling_text: str = None) -> str:
-    
-    if sibling_text:
-        if writer_name:
-            if writer_name in sibling_text:
-                signature_start = sibling_text.rfind(writer_name)
-                if signature_start > 0:
-                    clean_text = sibling_text[:signature_start].strip()
-                else:
-                    clean_text = sibling_text
-            else:
-                clean_text = sibling_text
-                print(f"writer_name not in text, writer_name: {writer_name}, text: {clean_text}")
-        else:
-            clean_text = sibling_text
-            # print(f"writer_name is None, sibling_text: {sibling_text}")
-            
-        return clean_text
-            
-    
-    if writer_name:
-        text = comment_element.get_text(strip=True)
-        if writer_name not in text:
-            print(f"writer_name not in text, writer_name: {writer_name}, text: {text}")
+def get_clean_text(text: str, writer_name: str = None) -> str:
    
-    sig_span: Tag | None = comment_element.find("span", attrs={"data-mw-comment-sig": True})
-    if sig_span is None:
-        return comment_element.get_text(" ", strip=True)
+    if not text:
+        return ""
+    
+    if not writer_name or writer_name == "":
+        return text.strip()
 
-    pieces: list[str] = []
-    for node in sig_span.parent.contents:
-        if node is sig_span:
-            break
-        if isinstance(node, NavigableString):
-            pieces.append(node.strip())
-        elif isinstance(node, Tag):
-            pieces.append(node.get_text(" ", strip=True))
+    original = text = text.strip()
 
-    clean = " ".join(filter(None, pieces)).strip()
-    return html.unescape(clean)
+    pattern = re.compile(rf"(.*?)\b{re.escape(writer_name)}\b.*$", re.DOTALL)
+
+    match = pattern.match(text)
+    if match:
+        clean = match.group(1).rstrip()
+        return clean
+
+    print(f"Writer name '{writer_name}' not found at end of comment. Returning original text.")
+    return original
 
 
 def get_writer_name_from_links(user_links):
@@ -836,10 +804,13 @@ def save_wikipedia_data(url):
             for i, comment in enumerate(section["comments"]):
                 comment["writer_name"] = names_writers[comment["writer_name"]] if comment["writer_name"] in names_writers else comment["writer_name"]
                 comment["reply_to"] = names_writers[comment["reply_to"]] if comment["reply_to"] in names_writers else comment["reply_to"]
-                if "(IDT)תגובה" in comment["text"]:
-                    comment["text"] = extract_first_clean_text(comment["text"])
                 if i == 0 and section["title"] and "-" in section["title"]:
                     comment["reply_to"] = None
+                if "הודעה זו נכתבה באמצעות מערכת המשוב" in comment["text"]:
+                    comment["text"] = comment["text"].replace("הודעה זו נכתבה באמצעות מערכת המשוב", "")
+                if "(IDT)תגובה" in comment["text"]:
+                    comment["text"] = extract_first_clean_text(comment["text"])
+                    
         if data is None:
             logger.error("Failed to extract data - process_wiki_talk_page returned None")
             return None
@@ -849,7 +820,7 @@ def save_wikipedia_data(url):
         with open(output_file, 'w', encoding='utf-8') as f:
             json.dump(data, f, ensure_ascii=False, indent=2)
         
-        # logger.info(f"Data successfully saved to {output_file}, writers: {names_writers}")
+        logger.info(f"Data successfully saved to {output_file}, writers: {names_writers}")
         
         return data
         
@@ -924,8 +895,6 @@ def filter_comments_by_date(comments: list, start_date: str, end_date: str, star
     logger.info(f"Date range: {start_dt} to {end_dt}")
     
     return filtered_comments
-
-
 
 def extract_first_clean_text(text):
     

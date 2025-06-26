@@ -84,7 +84,6 @@ async def save_research(
             except Exception as e:
                 logger.warning(f"Invalid message_weights format: {message_weights}, error: {e}")
                 parsed_message_weights = [0.5, 0.3, 0.2] if history_length == 3 else [0.7, 0.3]
-        return
         data = None
         if platform == "wikipedia":
             data = await analyze_wikipedia(
@@ -108,7 +107,7 @@ async def save_research(
                 start_time=start_time,
                 end_time=end_time,
                 history_length=int(history_length) if history_length is not None else 3,
-                message_weights=parsed_message_weights,
+                message_weights=message_weights,
                 include_messages=include_messages,
             )
         else:
