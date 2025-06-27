@@ -488,12 +488,12 @@ def process_wiki_talk_page(url):
         title = None
         sum_comments = None
         if not h2_element:
-            logger.warning(f"Skipping div without h2 element: {div}")
+            logger.warning(f"div without h2 element: {div}")
         else:
             title = h2_element.get_text(strip=True)
         sum_comments_element = div.find("span", class_="ext-discussiontools-init-section-commentCountLabel") 
         if not sum_comments_element:
-            logger.warning(f"Skipping section '{title}' without comment count")
+            logger.warning(f"section '{title}' without comment count")
         
         sum_comments = sum_comments_element.get_text(strip=True)
         next_sibling = div.find_next_sibling()
