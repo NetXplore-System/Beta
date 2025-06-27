@@ -484,8 +484,18 @@ def process_wiki_talk_page(url):
     sections = []
     
     for i, div in enumerate(all_divs):
-        title = div.find("h2").get_text(strip=True)
-        sum_comments = div.find("span", class_="ext-discussiontools-init-section-commentCountLabel").get_text(strip=True)
+        h2_element = div.find("h2")
+        if not h2_element:
+            logger.warning(f"Skipping div without h2 element: {div}")
+            continue
+        
+        title = h2_element.get_text(strip=True)
+        sum_comments_element = div.find("span", class_="ext-discussiontools-init-section-commentCountLabel")
+        if not sum_comments_element:
+            logger.warning(f"Skipping section '{title}' without comment count")
+            continue
+        
+        sum_comments = sum_comments_element.get_text(strip=True)
         next_sibling = div.find_next_sibling()
         
         data = []

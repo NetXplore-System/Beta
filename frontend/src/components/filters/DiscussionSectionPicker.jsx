@@ -16,7 +16,7 @@ const DiscussionSectionPicker = ({
     onSelect(section);
   };
 
-  const filteredOptions = content.filter((section) => {
+  const filteredOptions = content?.filter((section) => {
     const titleMatch = section.title
       .toLowerCase()
       .includes(searchQuery.toLowerCase());
