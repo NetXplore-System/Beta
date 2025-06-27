@@ -485,15 +485,15 @@ def process_wiki_talk_page(url):
     
     for i, div in enumerate(all_divs):
         h2_element = div.find("h2")
+        title = None
+        sum_comments = None
         if not h2_element:
             logger.warning(f"Skipping div without h2 element: {div}")
-            continue
-        
-        title = h2_element.get_text(strip=True)
-        sum_comments_element = div.find("span", class_="ext-discussiontools-init-section-commentCountLabel")
+        else:
+            title = h2_element.get_text(strip=True)
+        sum_comments_element = div.find("span", class_="ext-discussiontools-init-section-commentCountLabel") 
         if not sum_comments_element:
             logger.warning(f"Skipping section '{title}' without comment count")
-            continue
         
         sum_comments = sum_comments_element.get_text(strip=True)
         next_sibling = div.find_next_sibling()
@@ -552,10 +552,10 @@ def process_wiki_talk_page(url):
             next_sibling = next_sibling.find_next_sibling()
                 
         sections.append({
-            "title": title,
-            "sum_comments": sum_comments,
-            "comments": data,
-            "len_comments": len(data)
+            "title": title if title else "Unknown",
+            "sum_comments": sum_comments if sum_comments else "Unknown",
+            "comments": data if data else [],
+            "len_comments": len(data) if data else 0
         })
                 
     return sections
