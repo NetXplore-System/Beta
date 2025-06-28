@@ -494,8 +494,9 @@ def process_wiki_talk_page(url):
         sum_comments_element = div.find("span", class_="ext-discussiontools-init-section-commentCountLabel") 
         if not sum_comments_element:
             logger.warning(f"section '{title}' without comment count")
+        else:
+            sum_comments = sum_comments_element.get_text(strip=True)
         
-        sum_comments = sum_comments_element.get_text(strip=True)
         next_sibling = div.find_next_sibling()
         
         data = []
