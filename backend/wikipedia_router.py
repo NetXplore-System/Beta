@@ -1,6 +1,8 @@
+import copy
 from fastapi import APIRouter, Request, HTTPException, Query
 from fastapi.responses import JSONResponse
 from collections import defaultdict
+from bs4 import Tag
 import requests
 from bs4 import BeautifulSoup
 import logging
@@ -462,8 +464,6 @@ def debug_check_target_weights(links):
 
 names_writers = {}
 
-
-
 def process_wiki_talk_page(url):
     response = requests.get(url)
     html_content = response.text
@@ -480,8 +480,9 @@ def process_wiki_talk_page(url):
         logger.warning("Could not find any suitable child div")
         return []
 
-    all_divs = child.find_all("div", class_="mw-heading")
+    all_divs = child.find_all("div", class_="mw-heading mw-heading2 ext-discussiontools-init-section")
     sections = []
+    print(f"all_divs: {len(all_divs)}")
     
     for i, div in enumerate(all_divs):
         h2_element = div.find("h2")
@@ -501,7 +502,9 @@ def process_wiki_talk_page(url):
         
         data = []
         
-        while next_sibling and not (next_sibling.name == "div" and "mw-heading" in next_sibling.get("class", [])):
+        while next_sibling and not (next_sibling.name == "div" and "ext-discussiontools-init-section" in next_sibling.get("class", [])):
+            if next_sibling.name == "div" and "ext-discussiontools-init-section" in next_sibling.get("class", []):
+                print(f"next_sibling: {next_sibling.get('class', [])}")
             if next_sibling.name == "p":
 
                 comment_data, siblings_traversed = extract_comment_data(next_sibling)
@@ -617,7 +620,7 @@ def extract_comment_data(next_sibling):
                 names_writers[sender] = writer_name
             else:
                 print(f"writer_name is None, sender: {sender}")
-            comment_text = get_clean_text(comment_element.get_text(strip=True), writer_name if writer_name else sender)
+            comment_text = get_clean_text(comment_element, writer_name if writer_name else sender)
             writer_name = sender
             
         else:
@@ -649,7 +652,7 @@ def extract_comment_data(next_sibling):
                         names_writers[sender] = writer_name
                     else:
                         print(f"writer_name is None, sender: {sender}")
-                    comment_text += " " + get_clean_text(sibling_text, writer_name if writer_name else sender)
+                    comment_text += " " + get_clean_text(current_sibling_direct, writer_name if writer_name else sender)
                     writer_name = sender
                     break
                 else:
@@ -664,7 +667,7 @@ def extract_comment_data(next_sibling):
                 "writer_name": writer_name,
                 "text": comment_text,
                 "timestamp": timestamp,
-                "reply_to_timestamp": reply_to_timestamp if reply_to_timestamp and reply_to_timestamp.isdigit() else None
+                "reply_to_timestamp": reply_to_timestamp if reply_to_timestamp and (reply_to_timestamp.isdigit() or ("Z" in reply_to_timestamp and "T" in reply_to_timestamp)) else None
             }
             
             return comment_data, siblings_traversed 
@@ -681,10 +684,22 @@ def extract_comment_data(next_sibling):
         logger.error(f"Traceback: {traceback.format_exc()}")
         return None, 0
     
-def get_clean_text(text: str, writer_name: str = None) -> str:
+def get_clean_text(comment_element: Tag, writer_name: str = None) -> str:
    
-    if not text:
+    if not comment_element:
         return ""
+    
+    copy_comment_element = copy.copy(comment_element)
+    
+    sig_span = copy_comment_element.find("span", attrs={"data-mw-comment-sig": True})
+    if sig_span:
+        for sibling in list(sig_span.next_siblings):
+            if hasattr(sibling, 'decompose'):
+                sibling.decompose()
+    
+    text = copy_comment_element.get_text(strip=True)
+    
+    text = clean_unicode_formatting(text)
     
     if not writer_name or writer_name == "":
         return text.strip()
@@ -699,8 +714,21 @@ def get_clean_text(text: str, writer_name: str = None) -> str:
         return clean
 
     print(f"Writer name '{writer_name}' not found at end of comment. Returning original text.")
+    
     return original
 
+
+def clean_unicode_formatting(text: str) -> str:
+    
+    if not text:
+        return ""
+    
+    formatting_chars = [  '\u200F', '\u200E', '\u200D', '\u200C', '\u202A', '\u202B', '\u202C', '\u202D', '\u202E', '\u2066', '\u2067', '\u2068', '\u2069', '\uFEFF', '\u00AD']
+    
+    for char in formatting_chars:
+        text = text.replace(char, '')
+    
+    return text
 
 def get_writer_name_from_links(user_links):
    
@@ -727,7 +755,6 @@ def get_writer_name_from_links(user_links):
     
     return None
 
-
 def extract_sender_reply_and_timestamp(comment_end_value):
     
     if not comment_end_value or not comment_end_value.startswith("c-"):
@@ -735,16 +762,40 @@ def extract_sender_reply_and_timestamp(comment_end_value):
     
     parts = comment_end_value[2:].split("-")
     
-    if len(parts) >= 4:
+    if "T" and "Z" in comment_end_value:
+        # print(f"parts: {len(parts)}")
+        # print(f"parts: {parts}")
         
-        sender = parts[0].replace("_", " ") if len(parts) == 4 else parts[0].replace("_", " ") + " " + parts[1].replace("_", " ")
-        reply_to = parts[2].replace("_", " ") if len(parts) == 4 else parts[3].replace("_", " ") 
+        if len(parts) == 5:
+            sender = clean_unicode_formatting(parts[0].replace("_", " "))
+            sender_timestamp = get_clean_timestamp(parts[1] + parts[2] + parts[3])
+            return sender, None, sender_timestamp, None
+        elif len(parts) == 6:
+            sender = clean_unicode_formatting(parts[0].replace("_", " "))
+            sender_timestamp = get_clean_timestamp(parts[1])
+            reply_to = clean_unicode_formatting(parts[2].replace("_", " "))
+            reply_to_timestamp = get_clean_timestamp(parts[3] + parts[4] + parts[5])
+            return sender, reply_to, sender_timestamp, reply_to_timestamp
+        elif len(parts) == 8:
+            sender = clean_unicode_formatting(parts[0].replace("_", " "))
+            sender_timestamp = get_clean_timestamp(parts[1] + parts[2] + parts[3])
+            reply_to = clean_unicode_formatting(parts[4].replace("_", " "))
+            reply_to_timestamp = get_clean_timestamp(parts[5] + parts[6] + parts[7])
+            print(f"reply_to: {reply_to}, reply_to_timestamp: {reply_to_timestamp}")
+            return sender, reply_to, sender_timestamp, reply_to_timestamp
+        else:
+            return None, None, None, None
+    
+    if len(parts) >= 4 and len(parts) <= 5:
+        
+        sender = clean_unicode_formatting(parts[0].replace("_", " ")) if len(parts) == 4 else clean_unicode_formatting(parts[0].replace("_", " ")) + " " + clean_unicode_formatting(parts[1].replace("_", " "))
+        reply_to = clean_unicode_formatting(parts[2].replace("_", " ")) if len(parts) == 4 else clean_unicode_formatting(parts[3].replace("_", " ")) 
         sender_timestamp = parts[1] if len(parts) == 4 else parts[2]
         reply_to_timestamp = parts[3] if len(parts) == 4 else parts[4]
         
         if len(parts) > 4 and parts[1].replace("_", " ").isdigit():
-            sender = parts[0].replace("_", " ")
-            reply_to = parts[2].replace("_", " ") + " " + parts[3].replace("_", " ")
+            sender = clean_unicode_formatting(parts[0].replace("_", " "))
+            reply_to = clean_unicode_formatting(parts[2].replace("_", " ")) + " " + clean_unicode_formatting(parts[3].replace("_", " "))
             sender_timestamp = parts[1]
             reply_to_timestamp = parts[3]
             
@@ -752,12 +803,32 @@ def extract_sender_reply_and_timestamp(comment_end_value):
             reply_to_timestamp = parts[4]
 
         return sender, reply_to, sender_timestamp, reply_to_timestamp
-    elif len(parts) >= 2:
-        sender = parts[0].replace("_", " ")
+    elif len(parts) >= 2 and len(parts) <= 3:
+        sender = clean_unicode_formatting(parts[0].replace("_", " "))
         timestamp = parts[1]
         return sender, None, timestamp, None
     
     return None, None, None, None
+
+def get_clean_timestamp(timestamp_str):
+    try:
+        if not timestamp_str:
+            return None
+        
+        if timestamp_str.isdigit():
+            return timestamp_str
+                    
+        timestamp_str = timestamp_str.replace("Z", "")
+        timestamp_str = timestamp_str.replace("T", "")
+        timestamp_str = timestamp_str.replace(":", "")
+        timestamp_str = timestamp_str.replace(" ", "")
+        
+        if "." in timestamp_str:
+            timestamp_str = timestamp_str.split(".")[0]
+        return timestamp_str
+    except Exception as e:
+        logger.error(f"Error in get_clean_timestamp: {timestamp_str}, Exception: {str(e)}")
+        return None
 
 
 def get_direct_element(element):
